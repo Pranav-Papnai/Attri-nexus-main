@@ -40,3 +40,8 @@ dist-ssr
 # Security scans
 strix_runs/
 
+# Load testing binaries and caches
+load-tests/*.exe
+*.exe
+__pycache__/
+*.pyc
