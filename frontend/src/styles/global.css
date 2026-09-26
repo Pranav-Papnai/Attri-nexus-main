@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+/* Lenis Smooth Scroll Styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-display: 'Cinzel', serif;
+
+    /* ── Attri Nexus Brand Colors ── */
+    --navy-950: #0B132B;
+    --navy-900: #1C2541;
+    --navy-800: #263859;
+    --navy-700: #3A506B;
+    
+    --crimson-600: #B22234;
+    --crimson-700: #931B2A;
+    --crimson-800: #741521;
+    
+    --gold-500: #C5A059;
+    --gold-600: #A8833C;
+    --gold-100: #F4EDE0;
+    --gold-50: #FAF6EF;
+
+    --surface-canvas: #F8FAFC;
+    --surface-card: #FFFFFF;
+    --border-subtle: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-muted: #64748B;
+  }
+
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--surface-canvas);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    letter-spacing: -0.01em;
+  }
+
+  /* Safe area utility classes for iOS and notch devices */
+  .safe-area-pb {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .safe-area-pt {
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  }
+
+  h1, h2, h3, .font-heading, .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: -0.015em;
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  /* ── Accessibility ─────────────────────────────────────────────── */
+
+  /* Visible focus ring for keyboard users on anything interactive. Mouse
+     clicks don't trigger :focus-visible, so the design stays clean for
+     pointer users while WCAG 2.4.7 is met. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid #B22234;
+    outline-offset: 2px;
+  }
+
+  /* Skip-to-content link: off-screen until it receives keyboard focus. */
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    background: #0B132B;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition: top 0.15s ease-out;
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  /* Honour the OS "reduce motion" setting. motion/react reads this query
+     itself; this covers CSS animations, transitions and smooth scroll
+     (WCAG 2.3.3). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Institutional Gradients & Surfaces */
+.bg-navy-dark {
+  background: linear-gradient(180deg, #0B132B 0%, #111B38 100%);
+}
+
+.bg-navy-card {
+  background: linear-gradient(145deg, #131E3D 0%, #0B132B 100%);
+}
+
+.bg-crimson-gradient {
+  background: linear-gradient(135deg, #B22234 0%, #8E1625 100%);
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #C5A059 0%, #A8833C 100%);
+}
+
+/* Custom modern scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cinematicPan {
+  0% {
+    transform: scale(1.02) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate(-1.5%, -1%);
+  }
+  100% {
+    transform: scale(1.02) translate(0, 0);
+  }
+}
+
+.animate-cinematic-pan {
+  animation: cinematicPan 25s ease-in-out infinite alternate;
+  will-change: transform;
+}

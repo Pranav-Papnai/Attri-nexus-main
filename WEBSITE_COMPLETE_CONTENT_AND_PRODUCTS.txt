@@ -1,0 +1,632 @@
+================================================================================
+          ATTRI NEXUS — COMPLETE WEBSITE CONTENT & PRODUCTS DIRECTORY
+================================================================================
+Generated on: 04-September-2026
+Website: Attri Nexus (Agro Commodities & Grain Exports)
+Local Dev Server: http://localhost:5173
+Live Vercel URL: https://attri-nexus-web.vercel.app
+
+Aapke review ke liye website par dali gayi saari information (Products, Contacts,
+Headlines, Metrics, Stats, aur Pillars) is file me neeche detail me di gayi hai.
+Aap isko dekh kar jo bhi text, number, product ya detail badalna chahein, bas bata dein!
+
+================================================================================
+SECTION 1: BUSINESS, CONTACT & LEGAL INFORMATION
+================================================================================
+File Reference: frontend/src/constants/business.ts
+
+* Brand Name: Attri Nexus
+* Legal Entity: Attri Nexus Agro Commodities & Grain Exports
+* Primary Tagline: PURE COMMODITIES. EXCEPTIONAL QUALITY.
+* Sub-Tagline: India's trusted exporter & supplier of Premium Rice, Livestock Animal Feed, Pure Wheat & Chakki Atta, and Nutritious Beans & Pulses.
+
+* Phone Numbers:
+  - Primary Contact: +91 9654922815
+  - Secondary Contact: +91 5884922015
+* WhatsApp Number: +91 9654922815
+* Default WhatsApp Enquiry Text:
+  "Hello Attri Nexus, I would like to enquire about your agro commodities (Rice, Animal Feed, Wheat Grains, Wheat Flour, Beans & Pulses)."
+
+* Email Addresses:
+  - General & Sales Email: akashiseijuro1b@gmail.com
+
+* Corporate Address:
+  - Line 1: Attri Nexus Corporate Office
+  - Area: Agro Commerce Zone
+  - City / State: New Delhi / NCR, Delhi, India - 110001
+* Working Hours: Monday – Saturday: 9:00 AM – 7:30 PM (IST)
+
+* Social Media Handles:
+  - Instagram: https://instagram.com/attrinexus
+  - Facebook: https://facebook.com/attrinexus
+  - LinkedIn: https://linkedin.com/company/attrinexus
+  - YouTube: https://youtube.com/@attrinexus
+
+
+================================================================================
+SECTION 2: HOMEPAGE TEXT & KEY METRICS
+================================================================================
+File Reference: frontend/src/pages/HomePage.tsx
+
+1. HERO SECTION:
+   - Tagline Pill: "Attri Nexus • Export-Grade Infrastructure"
+   - Main Headline: "Pure Commodities. Exceptional Quality. Bulk Scale."
+   - Sub-headline: "India's premier integrated processor & bulk supplier across 5 core agro divisions: Traditional & Non-Basmati Rice, Animal Feed (Soy, Rapeseed & DDGS), Sortex MP Sharbati Wheat Grains, Cold-Milled Chakki Atta, and Laser-Sorted Pulses."
+   - Call to Action Buttons:
+     [1] "Explore Products" (Links to /products)
+     [2] "Bulk Commercial Desk" (Links to /bulk-enquiry)
+
+2. TRUST STRIP BAR:
+   - Item 1: 5 Agro Divisions (Rice, Feed, Wheat, Flour & Pulses)
+   - Item 2: Certified Lab Purity (Moisture & protein verification)
+   - Item 3: Sortex Optical Clean (Dust-free sorting & stone-milling)
+   - Item 4: Bulk & Export Logistics (Containerized global shipments)
+
+3. 5 CORE COMMODITIES (BENTO GRID):
+   - Card 1: Rice Range
+     * Title: Premium Aged Basmati & Non-Basmati Rice
+     * Varieties: 1121, 1509, 1718, Sona Masoori, IR 64, Swarna, Kolam, Ponni
+     * Highlight: 8.35mm+ Raw Grain Length | Creamy & Golden Sella
+   - Card 2: Animal & Livestock Feed
+     * Title: Animal & Livestock Nutrition
+     * Varieties: Soybean Meal DOC, Rapeseed Meal DOC, Corn DDGS & Rice DDGS
+     * Highlight: High Protein | Low Moisture | Low Fiber | Healthy Fat | Rich in Amino Acids
+   - Card 3: Wheat Grains
+     * Title: MP Sharbati Wheat (Whole Grains)
+     * Varieties: MP Sehore Sharbati Golden Lustrous Whole Wheat Grains
+     * Highlight: 99.8% Laser Sortexed | Zero Stones | Controlled <11.5% Moisture
+   - Card 4: Wheat Flour (Chakki Atta)
+     * Title: 100% MP Sharbati Chakki Atta
+     * Varieties: Stone-Ground Whole Wheat Atta
+     * Highlight: Cold-Milled (<40°C) | Zero Maida | 100% Wheat Germ & Bran Retained
+   - Card 5: Beans & Pulses
+     * Title: Unpolished Pulses & Whole Beans (8 Core Items)
+     * Varieties: Red Kidney Bean, Peas, Black-Eyed Bean, Chickpeas, Toor, Red Lentils, Black Matpe, Green Mung
+     * Highlight: High Protein | Rich in Fiber | Sortex Cleaned | Low Moisture | Uniform Size & Color
+
+4. ENTERPRISE AGRO METRICS STRIP (COUNTERS):
+   - Metric 1: [ 50,000+ MT ]  -> Annual Commodity Volume (Containerized Port Shipments)
+   - Metric 2: [ 99.8% ]       -> Sortex Optical Clean (Certified Laboratory Purity)
+   - Metric 3: [ 5 Divisions ] -> Integrated Agro Supply (Rice, Feed, Wheat, Flour & Pulses)
+   - Metric 4: [ 24-48 Hrs ]   -> Quick Dispatch Window (Direct Farm Belt Logistics)
+
+5. ABOUT STORY & HERITAGE SECTION:
+   - Left Showcase Box:
+     * Image: 5-Commodity Visual Portfolio
+     * Image Badge: Shield icon • "Rice • Feed • Wheat • Flour • Pulses"
+     * Highlight Box: "100% Pure Batches" (Lab Tested & Certified Specifications)
+       with "Guaranteed Purity" badge.
+   - Right Story Content:
+     * Tag: "Our Heritage & Scale"
+     * Title: "Pure Quality from the Soil to Global Tables, Mills & Farms."
+     * Story Paragraphs:
+       "At Attri Nexus, agro-commodities represent an unbroken chain of trust.
+       From direct farm partnerships in Punjab, MP, and Maharashtra to our state-of-the-art
+       Sortex processing and cold-milling facilities, we deliver purity at institutional scale."
+       "Whether catering to five-star culinary kitchens demanding aged Basmati, feed millers
+       requiring high-protein DOC & DDGS, or commercial bakeries requiring stone-ground Sharbati
+       Atta, our five specialized divisions ensure uncompromised quality."
+
+6. B2B COMMERCIAL PROCUREMENT DESK:
+   - Tag: "Commercial & Institutional Procurement Desk"
+   - Title: "Built for Agro Business & Global Exports"
+   - Paragraph: "Looking for a dependable partner for bulk supply of Rice, Animal Feed, Wheat Grains, Wheat Flour, or Pulses? Connect with Attri Nexus for wholesale pricing, distributor dealerships, and containerized export supply."
+   - Action Buttons:
+     [1] "Submit Bulk Enquiry" (Form Modal / Page)
+     [2] "Quick WhatsApp Quote" (Direct WhatsApp chat)
+
+
+================================================================================
+SECTION 3: COMPLETE PRODUCT DIRECTORY (15 PRODUCTS ACROSS 4 DIVISIONS)
+================================================================================
+File Reference: frontend/src/constants/products.ts
+
+--------------------------------------------------------------------------------
+DIVISION I: RICE (9 VARIETIES — BASMATI & NON-BASMATI)
+--------------------------------------------------------------------------------
+
+[1] Pusa 1121 Basmati Rice
+    - Category: Rice (Basmati)
+    - Brand Line: Attri Heritage Basmati
+    - Finishes / Processing: Creamy Sella, Golden Sella, Steamed
+    - Grain Length: 8.35mm+ raw grain length
+    - Elongation: Elongates 2.5x up to 20mm+ cooked
+    - Packaging Sizes: 10kg Poly/Woven Bag, 25kg Commercial Bag, 50kg Master Bag, Custom Export Containers
+    - Best Used For: Royal Biryani & Pulao, Fine Dining, Catering, Global Exports
+    - Origin: Punjab / Haryana / MP, India
+
+[2] Pusa 1509 Basmati Rice
+    - Category: Rice (Basmati)
+    - Brand Line: Attri Heritage Basmati
+    - Finishes / Processing: Creamy Sella, Golden Sella, Steamed
+    - Grain Length: 8.40mm+ average length
+    - Features: Fast cooking, tender texture, economical pricing
+    - Packaging Sizes: 10kg Bag, 25kg Bag, 50kg Bulk Dispatch
+    - Best Used For: Everyday Premium Cooking, Restaurant Steam Rice, HoReCa
+    - Origin: India
+
+[3] Pusa 1718 & 1885 Basmati Rice
+    - Category: Rice (Basmati)
+    - Brand Line: Attri Heritage Basmati
+    - Finishes / Processing: Raw / White, Steamed, Creamy Sella
+    - Grain Length: 8.30mm+ premium grain
+    - Features: High disease resistance, superior aroma retention, minimal broken percentage (<1%)
+    - Packaging Sizes: 10kg, 25kg, 50kg Bags
+    - Best Used For: Special Occasions, Commercial Biryani, International Retail Packs
+    - Origin: Punjab / Haryana, India
+
+[4] IR 64 Non-Basmati Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri Value Grains
+    - Finishes / Processing: Raw (White), Parboiled (Sella) 5% Broken / 25% Broken
+    - Features: Long slender grain, high milling yield, cost-effective institutional bulk supply
+    - Packaging Sizes: 25kg, 50kg PP Woven Bags, Breakbulk / Containerized Export
+    - Best Used For: Mass Institutional Catering, Canteens, African & Middle East Exports
+    - Origin: Andhra Pradesh / Telangana / Chhattisgarh, India
+
+[5] Swarna Non-Basmati Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri Value Grains
+    - Finishes / Processing: Raw White, Parboiled
+    - Features: Short-to-medium bold grain, soft fluffy texture, high carbohydrate energy
+    - Packaging Sizes: 25kg, 50kg Bags
+    - Best Used For: Daily Household Meals, Idli & Dosa Batter, Commercial Kitchens
+    - Origin: West Bengal / Odisha / Chhattisgarh, India
+
+[6] Sona Masoori Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri South Harvest
+    - Finishes / Processing: Aged Raw Rice, Steam Rice
+    - Features: Lightweight, aromatic medium slender grain, low starch, easy to digest
+    - Packaging Sizes: 10kg, 25kg Bags
+    - Best Used For: Daily South Indian Meals, Lemon Rice, Pongal, HoReCa
+    - Origin: Andhra Pradesh / Karnataka, India
+
+[7] Ponni Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri South Harvest
+    - Finishes / Processing: Boiled, Steamed, Raw
+    - Features: Highly nutritious, low glycemic index, firm non-sticky grains
+    - Packaging Sizes: 10kg, 25kg, 50kg Bags
+    - Best Used For: Traditional South Indian Cuisine, Diabetic Diet Friendly
+    - Origin: Tamil Nadu / Karnataka, India
+
+[8] Kolam Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri Everyday Staples
+    - Finishes / Processing: Raw Polished, Sortex Cleaned
+    - Features: Tiny slender grain, floral natural aroma, smooth mouthfeel
+    - Packaging Sizes: 10kg, 25kg, 50kg Bags
+    - Best Used For: Daily Family Meals, Dal-Chawal, Khichdi, Maharashtrian & Gujarati Cuisine
+    - Origin: Maharashtra / Gujarat, India
+
+[9] Jaya Boiled Rice
+    - Category: Rice (Non-Basmati)
+    - Brand Line: Attri Value Grains
+    - Finishes / Processing: Single Boiled, Double Boiled Parboiled
+    - Features: Bold thick grains, high fiber & vitamin retention, non-sticky firm bite
+    - Packaging Sizes: 25kg, 50kg Bags
+    - Best Used For: Kerala Meals, Kanji, Traditional South Indian Cooking
+    - Origin: Kerala / Karnataka, India
+
+
+--------------------------------------------------------------------------------
+DIVISION II: LIVESTOCK & ANIMAL FEED (3 CORE CATEGORIES / 4 PRODUCTS)
+--------------------------------------------------------------------------------
+MAIN NUTRITIONAL FOCUS & CORE PILLARS:
+  1. High Protein Content (46–48%+ Soy / 36–38% Rapeseed / 28–50% DDGS)
+  2. Low Moisture (Strictly controlled <9.5% - 11% for zero fungal risk)
+  3. Low Fiber (Optimized for maximum digestive absorption & superior FCR)
+  4. Healthy Fat Content (Preserved natural lipids & vegetable energy)
+  5. Rich in Amino Acids (High Lysine, Methionine, Threonine & Cystine)
+  6. Quality Heat Processing (Precision thermal conditioning deactivating anti-nutritional factors)
+
+[10] Attri High-Protein Soybean Meal (Soy DOC)
+     - Category: Animal Feed (Soybean Meal)
+     - Brand Line: Attri AgroFeed Solutions
+     - Form: Solvent Extracted Coarse Meal / De-Hulled Flakes
+     - Key Highlights:
+       * High Protein Content: 46% - 48%+ Crude Protein minimum guarantee
+       * Low Moisture: Maximum 10% - 11% moisture
+       * Low Fiber: Maximum 5.5% - 6.0% crude fiber
+       * Healthy Fat Content: 1.0% - 1.5% natural residual oil
+       * Rich in Amino Acids: Exceptional natural concentrations of Lysine, Methionine & Threonine
+       * Quality Heat Processing: Precision toasted to deactivate urease and trypsin inhibitors
+     - Packaging Sizes: 50kg Moisture-Proof HDPE Bags, 1 MT Jumbo Bags, Bulk Dispatches
+     - Target Sectors: Commercial Broiler & Layer Poultry, High-Yield Dairy Rations, Aqua Feeds
+
+[11] Attri Pure Rapeseed Meal (Mustard DOC / Canola Meal)
+     - Category: Animal Feed (Rapeseed Meal)
+     - Brand Line: Attri AgroFeed Solutions
+     - Form: Solvent Extracted Coarse Meal / Pelletized Meal
+     - Key Highlights:
+       * High Protein Content: 36% - 38%+ Crude Protein with high rumen bypass fraction
+       * Low Moisture: Maintained strictly under 9.5% - 10%
+       * Low Fiber: Balanced 9% - 11% crude fiber for healthy ruminant digestion
+       * Healthy Fat Content: 1.5% - 2.5% natural residual lipids
+       * Rich in Amino Acids: Exceptional source of Sulphur amino acids (Methionine & Cystine)
+       * Quality Heat Processing: Specialized steam-toasting destroys glucosinolates and enhances palatability
+     - Packaging Sizes: 50kg Moisture-Proof PP Bags, 1 MT Jumbo Bags, Containerized Cargo
+     - Target Sectors: Dairy Cattle & Buffalo Feeds, Fish & Aquaculture Feeds, Poultry Blends
+
+[12] Attri Golden Corn DDGS (Maize Distillers Dried Grains with Solubles)
+     - Category: Animal Feed (DDGS - Corn Based)
+     - Brand Line: Attri AgroFeed Solutions
+     - Form: Golden Yellow Granular Meal (Corn-Based)
+     - Key Highlights:
+       * High Protein Content: 27% - 28%+ Crude Protein with high rumen bypass protein (RUP)
+       * Healthy Fat Content: 8% - 10% concentrated natural corn oil for high metabolizable energy
+       * Low Moisture: Controlled strictly below 9% - 10%
+       * Low Fiber: 7% - 8% highly digestible neutral detergent fiber
+       * Rich in Amino Acids: Readily bio-available amino acid profile and organic phosphorus
+       * Quality Heat Processing: Low-temperature flash drying ensures rich golden color & zero scorching
+     - Packaging Sizes: 50kg Heavy-Duty Bags, 1 MT Bulk Jumbo Bags, Bulk Tankers
+     - Target Sectors: High-Producing Dairy Cattle Rations, Poultry Broiler Feeds, Feed Mills
+
+[13] Attri High-Protein Rice DDGS (Rice Distillers Dried Grains with Solubles)
+     - Category: Animal Feed (DDGS - Rice Based)
+     - Brand Line: Attri AgroFeed Solutions
+     - Form: Light Tan / Golden-Brown Fine Granular Meal (Rice-Based)
+     - Key Highlights:
+       * High Protein Content: 45% - 50%+ Crude Protein (Top-tier plant protein density)
+       * Low Moisture: <9.5% - 10% moisture content for extended shelf life and free flow
+       * Low Fiber: <4.5% - 5.5% ultra-low crude fiber for peak digestive efficiency
+       * Healthy Fat Content: 3.5% - 5.0% digestible lipids
+       * Rich in Amino Acids: Abundant essential bypass amino acids, Methionine & Lysine
+       * Quality Heat Processing: Modern indirect thermal drying preserves protein solubility
+     - Packaging Sizes: 50kg Woven Bags, 1 MT Jumbo Bags, Bulk Dispatches
+     - Target Sectors: Intensive Commercial Poultry, Shrimp & Aqua Diets, Dairy Cattle Rations
+
+
+--------------------------------------------------------------------------------
+DIVISION III: BEANS & PULSES (8 CORE COMMODITIES)
+--------------------------------------------------------------------------------
+Key Division Highlights (Standard across all 8 items):
+* High Protein
+* Rich in Fiber
+* Premium Quality (100% Unpolished, Natural)
+* Sortex Cleaned (Double Computer Laser Sortex)
+* Low Moisture (<10% - 10.5% Controlled)
+* Uniform Size & Color (Calibrated Grading)
+
+[14] Attri Premium Red Kidney Beans (Rajma)
+     - Category: Beans and Pulses
+     - Variety: Selected Bold Red Kidney Beans (Chitra & Sharmili Grade)
+     - Finishes / Processing: Double Sortex Cleaned, Machine Graded
+     - Key Highlights:
+       * High Protein: 22% - 24%+ natural vegetarian protein
+       * Rich in Fiber: High soluble & insoluble dietary fiber
+       * Premium Quality: 100% unpolished Grade-A whole beans
+       * Sortex Cleaned: Dual optical sortex cleaned, zero stones or dirt
+       * Low Moisture: Held strictly under 10.5% moisture
+       * Uniform Size & Color: Calibrated bold seed size and uniform crimson-red color
+     - Packaging Sizes: 1kg & 2kg Retail Zipper Pouches, 25kg Heavy Bags, 50kg Master Sacks
+     - Best Used For: Authentic Punjabi Rajma Masala, High-Protein Bowls, HoReCa Catering
+
+[15] Attri Premium Dried Peas (Green & Yellow Peas)
+     - Category: Beans and Pulses
+     - Variety: Grade-A Whole Green & Yellow Field Peas (Matar)
+     - Finishes / Processing: Sortex Cleaned, Unpolished Whole
+     - Key Highlights:
+       * High Protein: 21% - 23%+ digestible vegetable protein
+       * Rich in Fiber: Abundant dietary fiber supporting healthy digestion
+       * Premium Quality: Naturally dried field peas at peak maturity
+       * Sortex Cleaned: High-precision laser sortex cleaned
+       * Low Moisture: Maintained strictly under 10% moisture
+       * Uniform Size & Color: Calibrated spherical diameter with uniform natural color
+     - Packaging Sizes: 25kg Moisture-Proof Bags, 50kg Master Sacks, Bulk Containers
+     - Best Used For: Matar Kulcha & Ragda Gravies, Namkeen Roasting, Commercial Soups
+
+[16] Attri Select Black-Eyed Beans (Lobia / Cowpeas)
+     - Category: Beans and Pulses
+     - Variety: Bold White Black-Eyed Beans (Lobia / Chawli)
+     - Finishes / Processing: Machine Graded, Double Sortex Cleaned
+     - Key Highlights:
+       * High Protein: 23% - 25%+ plant protein density
+       * Rich in Fiber: Rich in dietary fiber, Folate, Iron & Potassium
+       * Premium Quality: Chemical-free, 100% natural whole unpolished beans
+       * Sortex Cleaned: Dual optical sortex cleaning ensures zero chaff or splits
+       * Low Moisture: Controlled below 10% moisture
+       * Uniform Size & Color: Creamy-white seeds with distinct black eye markings
+     - Packaging Sizes: 1kg Retail Pouches, 25kg Trade Bags, 50kg Master Sacks
+     - Best Used For: Traditional Lobia Masala, Protein Salads, Global Stews
+
+[17] Attri Bold Kabuli Chickpeas (Garbanzo Beans)
+     - Category: Beans and Pulses
+     - Variety: Export-Grade Extra Bold Kabuli Chickpeas (8mm / 9mm / 10mm+ Count)
+     - Finishes / Processing: Laser Sortex Cleaned, Calibrated Size Graded
+     - Key Highlights:
+       * High Protein: 20% - 22%+ complete vegetarian protein density
+       * Rich in Fiber: High complex prebiotic fiber and low GI
+       * Premium Quality: Hand-selected extra bold export count
+       * Sortex Cleaned: Dual optical sortex cleaning ensures spotless seeds
+       * Low Moisture: Controlled moisture under 9.8%
+       * Uniform Size & Color: Calibrated millimeter grading and uniform golden-cream hue
+     - Packaging Sizes: 1kg / 2kg Poly Pouches, 25kg Heavy PP Bags, 50kg Master Jute Bags
+     - Best Used For: Amritsari Chole & Pindi Chana, Creamy Hummus & Falafel, Export Trade
+
+[18] Attri Select Toor (Unpolished Pigeon Pea / Arhar)
+     - Category: Beans and Pulses
+     - Variety: 100% Unpolished Desi Yellow Pigeon Peas (Arhar Dal / Toor)
+     - Finishes / Processing: Unpolished Grade-A, Double Laser Sortexed
+     - Key Highlights:
+       * High Protein: 22% - 24% essential plant protein
+       * Rich in Fiber: Rich dietary fiber assisting healthy digestion
+       * Premium Quality: 100% unpolished with zero artificial colors or glazes
+       * Sortex Cleaned: Laser sortex processed, zero stones or dirt
+       * Low Moisture: Monitored <10% moisture content
+       * Uniform Size & Color: Calibrated bright golden-yellow split lentils
+     - Packaging Sizes: 1kg / 2kg Retail Packs, 25kg Trade Bags, 50kg Bulk Bags
+     - Best Used For: Daily Dal Tadka, Traditional Sambar & Rasam, Catering & Banquets
+
+[19] Attri Select Red Lentils (Masoor / Split Red Lentils)
+     - Category: Beans and Pulses
+     - Variety: Premium Football & Split Red Lentils (Masoor Dal)
+     - Finishes / Processing: Unpolished, Color Sortex Cleaned
+     - Key Highlights:
+       * High Protein: 24% - 26%+ concentrated plant protein
+       * Rich in Fiber: High soluble fiber and natural minerals (Iron & Zinc)
+       * Premium Quality: 100% natural unpolished lentils
+       * Sortex Cleaned: Advanced color-sortex cleaned, zero chaff or defective seeds
+       * Low Moisture: Maintained strictly below 9.8% moisture
+       * Uniform Size & Color: Brilliant natural salmon-orange color with uniform grading
+     - Packaging Sizes: 1kg Retail Pouches, 25kg Trade Bags, 50kg Master Sacks
+     - Best Used For: Red Lentil Soup & Curries, Continental Dals, High-Protein Blends
+
+[20] Attri Premium Black Matpe (Whole Urad / Black Gram)
+     - Category: Beans and Pulses
+     - Variety: Export-Grade Whole & Split Black Matpe (Black Gram / Urad)
+     - Finishes / Processing: Machine Graded, Double Sortex Cleaned
+     - Key Highlights:
+       * High Protein: 24% - 25%+ exceptional protein density
+       * Rich in Fiber: Dense soluble dietary fiber for culinary fermentations
+       * Premium Quality: Unpolished farm-fresh crop with rich natural iron
+       * Sortex Cleaned: High-speed infrared and optical sortex cleaning
+       * Low Moisture: Controlled <10.5% moisture
+       * Uniform Size & Color: Deep jet-black cylindrical seeds with calibrated grading
+     - Packaging Sizes: 1kg / 2kg Poly Pouches, 25kg Heavy Bags, 50kg Master Sacks
+     - Best Used For: Dal Makhani & Bukhara Dals, Idli & Dosa Batter Fermentation
+
+[21] Attri High-Purity Green Mung Beans (Moong / Green Gram)
+     - Category: Beans and Pulses
+     - Variety: Whole Shiny Green Mung Beans & Split Moong Dal
+     - Finishes / Processing: Unpolished, High-Precision Sortex Cleaned
+     - Key Highlights:
+       * High Protein: 23% - 24%+ readily digestible light vegetarian protein
+       * Rich in Fiber: High prebiotic dietary fiber promoting digestive ease
+       * Premium Quality: 100% natural unpolished whole beans with >95% sprouting rate
+       * Sortex Cleaned: Computerized sortex cleaned, removing discolored seeds
+       * Low Moisture: Carefully dehydrated to <9.8% moisture
+       * Uniform Size & Color: Lustrous emerald-green color and uniform seed diameter
+     - Packaging Sizes: 1kg / 2kg Retail Packs, 25kg Trade Bags, 50kg Master Sacks
+     - Best Used For: Fresh Sprout Salads, Moong Khichdi, Whole Grain & Dal Wholesale
+
+
+--------------------------------------------------------------------------------
+DIVISION IV: WHEAT (WHOLE GRAINS — 4 VARIETIES)
+--------------------------------------------------------------------------------
+
+[22] Attri Premium Sharbati Wheat
+     - Category: Wheat
+     - Brand Line: Attri Wheat Harvest
+     - Variety: MP Sharbati Golden Whole Grain
+     - Highlights:
+       * Premium Quality (100% genuine MP Sharbati golden grain)
+       * Naturally Sweet Taste (Inherent natural sweetness in flour)
+       * High Protein (12.5% - 13.5%+ balanced protein density)
+       * Soft & Fine Flour (Cold-mills into velvet-textured chakki flour)
+       * Rich in Nutrition (Essential minerals, magnesium & fiber retained)
+       * Excellent Chapati Quality (Chapatis puff fully & stay soft for hours)
+     - Packaging Sizes: 50kg Food-Grade Sacks, 1 MT Jumbo Bags, Bulk FTL Dispatch
+     - Best Used For: Premium Soft Chapatis & Phulkas, Artisanal Stone-Milling, Retail Atta Brands
+     - Origin: Sehore & Vidisha, Madhya Pradesh, India
+
+[23] Attri Select Lokwan Wheat
+     - Category: Wheat
+     - Brand Line: Attri Wheat Harvest
+     - Variety: Lokwan Whole Wheat Grain
+     - Highlights:
+       * High Protein (12.0% - 12.8%+ plant protein content)
+       * Good Gluten Quality (Elastic gluten network for superior dough stretch)
+       * Premium Grain (Carefully sorted, plump semi-hard kernels)
+       * Uniform Grains (Machine-graded seed caliber for smooth mill hopper flow)
+       * Excellent Milling Quality (High flour extraction rate with low bran speckle)
+       * Ideal for Atta Production (Perfect for commercial flour mills & bakeries)
+     - Packaging Sizes: 50kg PP Woven Bags, 1 MT Jumbo Bags, Full Truckload Dispatch
+     - Best Used For: Commercial Atta Mills, Bulk Bread & Bakery Flours, Food Service
+     - Origin: Maharashtra / Madhya Pradesh, India
+
+[24] Attri Malviya Wheat
+     - Category: Wheat
+     - Brand Line: Attri Wheat Harvest
+     - Variety: Malviya Whole Grain Wheat
+     - Highlights:
+       * Premium Grain Quality (Clean, lustrous, high test-weight kernels)
+       * Good Protein Content (11.8% - 12.5%+ balanced protein composition)
+       * Rich in Nutrition (Abundant natural B-vitamins, iron & dietary fiber)
+       * Clean & Uniform Grains (99.8% laser-sortexed, zero foreign seeds or stones)
+       * Excellent Milling Quality (Easy break release and fine granulation)
+       * Ideal for Daily Consumption (Light on the stomach, nourishing daily staple)
+     - Packaging Sizes: 25kg Bags, 50kg Heavy Sacks, Bulk Containerized Export
+     - Best Used For: Everyday Household Rotis, Regional Flour Packers, Institutional Kitchens
+     - Origin: Malwa Region, Madhya Pradesh / UP, India
+
+[25] Attri Premium Durum Wheat (Kathia / Semolina Wheat)
+     - Category: Wheat
+     - Brand Line: Attri Wheat Harvest
+     - Variety: Amber Durum Whole Grain (Triticum Durum)
+     - Highlights:
+       * High Protein (13.5% - 14.5%+ very high protein density)
+       * Hard Grain Quality (Heavy vitreous endosperm with high bulk density)
+       * Strong Gluten (High wet gluten index providing firm al dente texture)
+       * Rich in Carotenoids (Natural bright golden-amber pigment)
+       * Excellent Semolina Quality (Maximum recovery of coarse & fine Suji / Semolina)
+       * Ideal for Pasta Production (Gold standard for macaroni, pasta, noodles & couscous)
+     - Packaging Sizes: 50kg Export Woven Bags, 1 MT Jumbo Sacks, Bulk Port Dispatch
+     - Best Used For: Pasta, Macaroni & Spaghetti, Suji & Rawa Extraction, Couscous
+     - Origin: Central & Western India (MP / Gujarat / Rajasthan)
+
+     COMMERCIAL QUALITY TIERS & SORTEX STANDARD (FOR WHOLE GRAINS & PULSES):
+     * Tier 1: Premium Domestic Grade (Local wholesale, regional packaging & commercial milling).
+     * Tier 2: Certified Export Grade (Strict <11.5% moisture, zero infestation, seaworthy bags).
+     * Included Standard: 100% Double Laser Sortex Cleaned (99.8% purity) included across all tiers.
+
+
+--------------------------------------------------------------------------------
+DIVISION V: WHEAT FLOUR (4 VARIETIES x 4 CUSTOM MILLING FINISHES)
+--------------------------------------------------------------------------------
+Attri Nexus mills flour directly from the exact 4 wheat grain varieties we supply.
+Buyers can choose from 4 custom milling finishes for any flour variety:
+
+[26] Attri Pure Sharbati Wheat Flour (100% MP Sharbati Whole Wheat)
+     - Category: Wheat Flour
+     - Milled From: 100% MP Sharbati Golden Whole Grain
+     - Brand Line: Attri Flour Milling
+     - Purity: 100% MP Sharbati Wheat, 0% Maida, 100% Whole Bran Retained
+     - Features: High water absorption, naturally sweet taste, rotis stay soft for 8-10 hours
+     - Packaging Sizes: 5kg, 10kg Laminated Poly Bags, 25kg, 50kg Institutional Bags
+     - Best Used For: Phulkas, Rotis, Parathas, Puris, Artisan Bread, Luxury Food Service
+     - Origin: Sehore & Vidisha Belt, Madhya Pradesh, India
+
+[27] Attri Select Lokwan Wheat Flour (High-Yield Commercial Flour)
+     - Category: Wheat Flour
+     - Milled From: 100% Select Lokwan High-Gluten Whole Grain
+     - Brand Line: Attri Flour Milling
+     - Purity: Pure Lokwan Wheat, Consistent Starch-Protein Balance, Excellent Elasticity
+     - Features: High milling yield, strong extensible dough, uniform chapati puffing
+     - Packaging Sizes: 10kg, 25kg, 50kg Heavy Food-Grade Bags, Bulk Container Load
+     - Best Used For: Commercial Chapati Plants, Institutional Caterers, Daily Family Rotis
+     - Origin: Central & Western India (Madhya Pradesh & Maharashtra)
+
+[28] Attri Malviya Wheat Flour (Everyday Wholesome Nutrition)
+     - Category: Wheat Flour
+     - Milled From: 100% Malviya Whole Grain Wheat
+     - Brand Line: Attri Flour Milling
+     - Purity: Pure Malviya Whole Wheat, Balanced Mineral & Dietary Fiber Density
+     - Features: Clean granulation, light & easy digestion, reliable water uptake
+     - Packaging Sizes: 10kg, 25kg, 50kg Food-Grade Sacks
+     - Best Used For: Daily Household Rotis & Breads, Community Kitchens, Regional Flour Packaging
+     - Origin: Malwa Region, Madhya Pradesh / UP, India
+
+[29] Attri Durum Wheat Semolina & Flour (Suji / Rawa / Vitreous Pasta Flour)
+     - Category: Wheat Flour
+     - Milled From: 100% Hard Vitreous Amber Durum Grain
+     - Brand Line: Attri Flour Milling
+     - Purity: 100% Amber Durum Vitreous Wheat, 13.5%-14.5%+ Protein, High Carotenoid Pigment
+     - Features: Heavy amber color, strong resilient wet gluten, firm al dente texture
+     - Granulation Options: Coarse Suji (Rawa), Fine Semolina, or Vitreous Durum Pasta Flour
+     - Packaging Sizes: 10kg, 25kg, 50kg Bags, Bulk Commercial Supply
+     - Best Used For: Macaroni, Pasta, Spaghetti, Suji Halwa, Upma, Mediterranean Breads
+     - Origin: Central & Western India (MP / Gujarat / Rajasthan)
+
+CUSTOM PROCESSING & MILLING FINISHES (CHOSEN PER VARIETY):
+1. Stone Ground (Chakki Grinding):
+   * Method: Traditional slow stone chakki grinding between two heavy natural stones.
+   * Technical Profile: Dheere peesne ki wajah se friction se zyada heat (<40°C) produce nahi
+     hoti, jisse wheat ke natural nutrients, vitamins aur oils (germ) preserve rehte hain.
+   * Best For: Authentic soft, sweet household chapatis, phulkas & health-conscious retail.
+
+2. Roller Milling (Modern Method):
+   * Method: Industrial continuous high-speed steel roller reduction and plansifter sieving.
+   * Technical Profile: Wheat ko steel ke bade-bade rollers ke through guzaara jata hai. Isme
+     grain ke alag-alag parts (bran, germ, aur endosperm) ko easily separate kiya ja sakta hai.
+   * Best For: Refined flour (maida), high-ratio bakery flour, and uniform commercial white/brown flours.
+
+3. Impact / Hammer Milling:
+   * Method: High-velocity hardened metal hammers/blades pulverizing grains via intense kinetic impact.
+   * Technical Profile: High-speed metal hammers ya blades wheat grains par zor se impact daal kar
+     unhe todte aur peeste hain.
+   * Best For: Coarse whole meals, high-fiber compounding, and livestock animal feed rations.
+
+4. Pin Milling:
+   * Method: High-speed counter-rotating pin discs generating high-velocity particle collision.
+   * Technical Profile: Rotating pins wale discs wheat particles ko aapas mein ya pins ke saath
+     takra kar aur baarik (fine) powder mein convert karte hain.
+   * Best For: Exceptionally uniform, fine, silky flour powders for premium industrial confectionery & baking.
+
+
+================================================================================
+SECTION 4: WHY CHOOSE ATTRI NEXUS (6 CORE PILLARS)
+================================================================================
+File Reference: frontend/src/constants/whyUs.ts
+
+1. Quality First:
+   - "Uncompromising standards across all commodities"
+   - Zero compromise on grain & feed purity.
+   - Strict lab testing for moisture & nutrition.
+   - Disciplined milling, grinding & pelleting.
+
+2. Carefully Selected:
+   - "Curated by agro & nutrition specialists"
+   - Authentic origin verification from MP, Punjab, Haryana & South India.
+   - Commodity-specific grading criteria.
+   - Optical laser sorting for zero foreign matter.
+
+3. Culinary & Nutritional Excellence:
+   - "Pure taste, wholesome health & high energy"
+   - 100% natural, unadulterated purity.
+   - Aromatic rice & whole wheat bran retention.
+   - High-protein livestock feed formulation.
+
+4. Supply Consistency:
+   - "Reliability you can count on year-round"
+   - Uniform grain size, milling grade & pellet density.
+   - Year-round stock availability & price stability.
+   - Strict moisture control across all seasons.
+
+5. Hygienic Approach:
+   - "Clean, safe, and modern handling"
+   - Automated food-grade packing lines.
+   - Tamper-resistant moisture-proof HDPE/PP bags.
+   - FSSAI compliant warehouse protocols.
+
+6. Customer & Trade Focus:
+   - "Partnership built on enduring trust"
+   - Dedicated commercial sales desk.
+   - Flexible custom packaging & private labeling.
+   - Prompt dispatch and end-to-end logistics support.
+
+
+================================================================================
+SECTION 5: FREQUENTLY ASKED QUESTIONS (FAQS)
+================================================================================
+File Reference: frontend/src/constants/faqs.ts
+
+Q1: What agricultural commodities does Attri Nexus supply?
+A1: Attri Nexus operates across four specialized divisions:
+    1. Premium Basmati & Non-Basmati Rice
+    2. Cattle Feed Pellets & De-Oiled Rice Bran (DOC)
+    3. MP Sharbati Whole Wheat & Cold-Milled Chakki Atta
+    4. Unpolished Pulses (Toor Dal & Chana Dal)
+
+Q2: What is the minimum order quantity (MOQ) for bulk & wholesale orders?
+A2: For domestic commercial supply, our standard MOQ starts from 1 Metric Ton (MT)
+    for mixed commodities or 5 MT for single bulk dispatches. For export consignments,
+    we handle 20ft and 40ft container loads (FCL).
+
+Q3: Can we request custom packaging or private labeling?
+A3: Yes, we provide full private labeling, contract manufacturing, and custom bag printing
+    (1kg, 5kg, 10kg, 25kg, and 50kg BOPP, Non-Woven, and PP bags) for qualified volumes.
+
+Q4: How do you ensure product purity and quality consistency?
+A4: Every batch undergoes rigorous laboratory testing for moisture content, protein
+    percentage, foreign matter, and grain length. All grains and pulses pass through
+    high-precision optical Sortex cleaning machines before packaging.
+
+Q5: What are your payment terms and delivery timelines?
+A5: We offer transparent commercial trade terms (Advance / LC / Bank Guarantee based on volume).
+    Standard domestic dispatches occur within 24 to 48 hours from our central hubs.
+
+
+================================================================================
+KAISI BHI DETAIL CHANGE KARNI HO TOH BAS BATAEIN:
+================================================================================
+Aap is file ko aasaani se padh sakte hain. Agar aapko:
+- Koi phone number ya email badalna ho,
+- Kisi product ka naam, variety ya description change karni ho,
+- Naya product add ya delete karna ho,
+- Pricing ya pack size badalna ho,
+- Homepage ki koi heading ya tagline change karni ho,
+
+Toh aap seedha yahan chat me bata sakte hain, hum turant code me update kar denge!
+================================================================================

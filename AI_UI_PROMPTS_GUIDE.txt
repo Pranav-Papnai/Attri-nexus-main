@@ -1,0 +1,69 @@
+================================================================================
+          ATTRI NEXUS - AI PROMPTS CHEAT SHEET (MOTION.DEV & KOKONUT UI)
+================================================================================
+
+Yeh cheat-sheet aap AI ko copy-paste karke prompts dene ke liye use kar sakte hain.
+Aapko code likhne ki zaroorat nahi hai, bas neeche diye gaye prompts me se copy karein.
+
+--------------------------------------------------------------------------------
+1. MOTION.DEV PROMPTS (Smooth Animations, Scroll Effects & Physics)
+--------------------------------------------------------------------------------
+
+[Prompt 1 - Cards Hover & Float]
+"Homepage ke Core Commodity cards par motion.dev ka smooth hover float aur subtle scale effect laga do."
+
+[Prompt 2 - Scroll Entrance Animation]
+"Jab user page scroll kare, toh Why Us aur Process ke cards motion.dev se smoothly neeche se upar fade-in hokar aane chahiye."
+
+[Prompt 3 - Button Tap / Click Feel]
+"Sabhi 'Enquire Now' aur 'Explore Products' buttons par motion.dev ka smooth click tap aur bounce effect add kar do."
+
+[Prompt 4 - Staggered Grid Reveal]
+"Product list ko load hote waqt ek ke baad ek (staggered delay ke sath) motion.dev se smoothly reveal karo."
+
+[Prompt 5 - Sticky Header Hide on Scroll]
+"Navbar par motion.dev ka smart scroll behavior laga do: jab neeche scroll karein toh hide ho jaye aur upar scroll karein toh smooth transition ke sath reveal ho."
+
+
+--------------------------------------------------------------------------------
+2. KOKONUT UI PROMPTS (Luxury Glowing Borders, Shimmer & Micro-Interactions)
+--------------------------------------------------------------------------------
+
+[Prompt 1 - Gold Glowing Border Cards]
+"Why Choose Us ke 6 cards par Kokonut UI ka GlowCard laga do jisme gold glow effect aaye jab mouse hover ho."
+
+[Prompt 2 - Metallic Shimmering Heading]
+"Hero section ki headline 'Exceptional Quality' aur section badges par Kokonut UI ka ShimmerText effect laga do."
+
+[Prompt 3 - Install New Component from Kokonut UI]
+"Kokonut UI se particle-button install karke Hero CTA button par lagao."
+
+[Prompt 4 - Interactive Feature Spotlight]
+"Product Detail page ke specs cards par Kokonut UI ka spotlight glow border effect add karo."
+
+
+--------------------------------------------------------------------------------
+3. REMOTION PROMPTS (Programmatic React Videos & Motion Reels)
+--------------------------------------------------------------------------------
+
+[Prompt 1 - Product Launch Promo Video]
+"Basmati Rice ke liye Remotion me 10-second ka animated promotional video reel bana do with price and specs."
+
+[Prompt 2 - Social Media Story / Reel (9:16)]
+"Instagram story aur WhatsApp status ke liye 1080x1920 format me 15-second ka dynamic agro video generate karo."
+
+
+--------------------------------------------------------------------------------
+4. ALL-IN-ONE HYBRID PROMPTS (Best Luxury Polish)
+--------------------------------------------------------------------------------
+
+[Hybrid Prompt 1]
+"Hero Section ke button ko Kokonut UI style ka glowing button banao aur neeche ke bento cards par motion.dev ka smooth scroll animation daal do."
+
+[Hybrid Prompt 2]
+"Contact Page ke enquiry form inputs par focus hone par gold glow border do aur submit button par motion.dev ka click animation lagao."
+
+[Hybrid Prompt 3]
+"Poori website ke section headers aur luxury badges me Kokonut UI ka subtle gold shimmer text integrate kar do."
+
+================================================================================

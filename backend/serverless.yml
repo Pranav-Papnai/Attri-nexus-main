@@ -1,0 +1,42 @@
+service: attri-nexus-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'ap-south-1'} # Default: Mumbai (Fastest for India/Asia/Gulf)
+  memorySize: 512
+  timeout: 15
+  httpApi:
+    cors: true
+  environment:
+    NODE_ENV: production
+    JWT_SECRET: ${env:JWT_SECRET, 'attri_nexus_production_jwt_secret_key_2026_secure'}
+    MONGODB_URI: ${env:MONGODB_URI, ''}
+    CORS_ORIGIN: ${env:CORS_ORIGIN, '*'}
+    CLOUDINARY_URL: ${env:CLOUDINARY_URL, ''}
+    CLOUDINARY_CLOUD_NAME: ${env:CLOUDINARY_CLOUD_NAME, ''}
+    CLOUDINARY_API_KEY: ${env:CLOUDINARY_API_KEY, ''}
+    CLOUDINARY_API_SECRET: ${env:CLOUDINARY_API_SECRET, ''}
+    TURNSTILE_SECRET_KEY: ${env:TURNSTILE_SECRET_KEY, ''}
+    RESEND_API_KEY: ${env:RESEND_API_KEY, ''}
+    ADMIN_NOTIFICATION_EMAIL: ${env:ADMIN_NOTIFICATION_EMAIL, ''}
+    FROM_EMAIL: ${env:FROM_EMAIL, 'Attri Nexus <onboarding@resend.dev>'}
+
+functions:
+  api:
+    handler: src/lambda.handler
+    events:
+      - httpApi:
+          path: '/{proxy+}'
+          method: '*'
+      - httpApi:
+          path: '/'
+          method: '*'
+
+package:
+  patterns:
+    - '!test/**'
+    - '!.git/**'
+    - '!node_modules/mongodb-memory-server/**'

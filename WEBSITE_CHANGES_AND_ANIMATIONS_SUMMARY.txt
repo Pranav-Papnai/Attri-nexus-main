@@ -1,0 +1,192 @@
+================================================================================
+          ATTRI NEXUS - WEBSITE CHANGES & INFORMATION SUMMARY
+================================================================================
+Generated on: 04-September-2026
+Project: Attri Nexus (Premium Agro Commodities & Trade Platform)
+Live URL: https://attri-nexus-web.vercel.app
+
+Neeche di gayi list me har file aur uske andar daali gayi sari information,
+animations aur components ki puri detail di gayi hai:
+
+--------------------------------------------------------------------------------
+1. TOP NAVIGATION BAR (NAVBAR)
+--------------------------------------------------------------------------------
+File Path: frontend/src/components/layout/Navbar.tsx
+
+Kya changes / information add ki gayi:
+* Luxury Scroll Progress Bar:
+  - Screen ke sabse top par ek gold-amber gradient progress line add ki.
+  - User jab page scroll karta hai, toh yeh line smooth physics (useSpring)
+    ke sath left se right fill hoti hai.
+* Animated Products Dropdown (Desktop):
+  - "Products" menu par hover karne par AnimatePresence ke sath smooth scale
+    aur fade entrance animation di gayi hai.
+  - Dropdown me 4 Core Divisions ke quick links with icons hain:
+    1. Rice (Basmati, Sona Masoori & Long Grain)
+    2. Animal Feed (High-Protein Cattle Pellets & Rice Bran DOC)
+    3. Wheat and Wheat Flour (MP Sharbati Chakki Atta & Whole Grains)
+    4. Beans and Pulses (Unpolished Toor Dal & Chana Dal)
+* Animated Mobile Menu Drawer:
+  - Mobile screens par hamburger menu par click karne par drawer right side
+    se spring slide-in karta hai aur backdrop blur fade-in hota hai.
+
+--------------------------------------------------------------------------------
+2. FLOATING WHATSAPP BUTTON (BOUNCE ANIMATION)
+--------------------------------------------------------------------------------
+File Path: frontend/src/components/layout/WhatsAppFloatingBtn.tsx
+
+Kya changes / information add ki gayi:
+* Continuous Lively Bounce Animation:
+  - Button screen ke right-bottom corner me continuously up-down bounce
+    karta rehta hai (y: [0, -14, 0, -6, 0, 0]).
+  - Iske sath green glowing shadow pulse karti hai taaki user ka dhyaan
+    turant WhatsApp bulk enquiry par jaye.
+* Animated Tooltip:
+  - Pehle 8 seconds tak "Chat on WhatsApp" ka soft popup tooltip smooth
+    fade & scale hokar dikhta hai, fir auto-dismiss ho jata hai.
+
+--------------------------------------------------------------------------------
+3. HERO BANNER SECTION
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya changes / information add ki gayi:
+* Staggered Entrance Animations:
+  - Page load hone par text ek ke baad ek smooth reveal hota hai:
+    1. Tagline Pill: "Attri Nexus • Export-Grade Infrastructure" (Fade & slide up)
+    2. Main Headline: "Pure Commodities. Exceptional Quality. Bulk Scale."
+    3. Subtitle: 4 core divisions ka verified description
+    4. CTA Buttons: "Explore Products" aur "Bulk Commercial Desk"
+* Action Buttons Micro-Interaction:
+  - Buttons par cursor le jaane par scale up (whileHover) aur click par
+    spring press (whileTap) effect.
+* Note on Right-Side Card:
+  - Aapke kehne par Hero section ka floating verified card hata diya gaya hai,
+    jisse Hero layout ab pura spacious aur clean dikh raha hai.
+
+--------------------------------------------------------------------------------
+4. TRUST STRIP BAR
+--------------------------------------------------------------------------------
+File Path: frontend/src/components/ui/TrustStrip.tsx
+
+Kya changes / information add ki gayi:
+* Scroll-Triggered Fade-In:
+  - Jab user Hero se scroll karke niche aata hai, Trust bar neeche se
+    smoothly slide up hoti hai (whileInView).
+* 4 Key Pillars Displayed:
+  1. 4 Agro Divisions (Rice, Feed, Wheat & Pulses)
+  2. Certified Lab Purity (Moisture & protein verification)
+  3. Sortex Optical Clean (Dust-free sorting & stone-milling)
+  4. Bulk & Export Logistics (Containerized global shipments)
+* Micro-Hover Effects:
+  - Har item par hover karne par icon box gold-red me convert hota hai.
+
+--------------------------------------------------------------------------------
+5. CORE COMMODITIES (BENTO GRID)
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya changes / information add ki gayi:
+* Staggered Bento Cards Scroll Entrance:
+  - 4 core division cards scroll karne par alag-alag delay se upar aate hain.
+* Spring Hover Lift:
+  - Card par cursor le jaane par card halka sa upar uthta hai (whileHover y: -6).
+  - Background image smoothly zoom-in hoti hai (scale: 1.05).
+* 4 Divisions Featured:
+  1. Rice Range (Aged Basmati, 1121, 1509, 1718, Sona Masoori, IR 64)
+  2. Wheat & Chakki Atta (Cold-milled 100% Sharbati whole grain atta)
+  3. Beans & Pulses (Unpolished Toor Dal, Chana Dal & lentils)
+  4. Animal & Livestock Feed (NutriCattle 20%+ protein pellets & DOC)
+
+--------------------------------------------------------------------------------
+6. ENTERPRISE AGRO METRICS COUNTER STRIP
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya information add ki gayi:
+Bento Grid ke neeche ek dark luxury agro statistics strip add ki gayi hai:
+* 50,000+ MT  -> Annual Commodity Volume (Containerized Port Shipments)
+* 99.8%       -> Sortex Optical Clean (Certified Laboratory Purity)
+* 4 Divisions -> Integrated Agro Supply (Rice, Feed, Wheat & Pulses)
+* 24-48 Hrs   -> Quick Dispatch Window (Direct Farm Belt Logistics)
+* Feature:
+  - Har metric card scroll par fade-in hota hai aur hover karne par
+    gold border glow karti hai.
+
+--------------------------------------------------------------------------------
+7. INTERACTIVE PRODUCT SHOWCASE & CATEGORY TABS
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya changes / information add ki gayi:
+* Animated Category Filter Tabs:
+  - "Rice", "Animal Feed", "Wheat & Atta", "Beans & Pulses", "All"
+  - Buttons par tap/hover spring animations hain.
+* Smooth Grid Transition:
+  - Jab user category badalta hai, toh product cards instantly jhatke se
+    change hone ki jagah smooth fade aur glide entrance ke sath switch hote hain.
+
+--------------------------------------------------------------------------------
+8. PRODUCT CARDS (CATALOGUE ITEMS)
+--------------------------------------------------------------------------------
+File Path: frontend/src/components/ui/ProductCard.tsx
+
+Kya changes / information add ki gayi:
+* Interactive Physics:
+  - Pure card me Motion spring hover lift (y: -6) add kiya.
+  - Buttons ("Details" aur "Enquire Now") me tap/press micro-animations.
+
+--------------------------------------------------------------------------------
+9. INQUIRY POPUP MODAL
+--------------------------------------------------------------------------------
+File Path: frontend/src/components/ui/ModalEnquiry.tsx
+
+Kya changes / information add ki gayi:
+* AnimatePresence & Spring Entrance:
+  - "Enquire Now" ya "Bulk Quote" par click karne par dark backdrop
+    smoothly fade-in hota hai aur modal dialog center se spring zoom-in karta hai.
+  - Close button ya backdrop click par bina kisi lag ke smoothly fade-out hota hai.
+* Features:
+  - Product pre-selection
+  - Direct WhatsApp chat link with auto-filled enquiry text
+  - Turnstile Captcha + Form submission with celebration confetti
+
+--------------------------------------------------------------------------------
+10. ABOUT STORY SECTION (4-COMMODITY SHOWCASE & 100% BOX)
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya changes / information add ki gayi:
+* 4-Commodity Bowl Showcase Image:
+  - 4 bowls (Rice, Feed pellets, Wheat & Flour, Pulses) ki showcase image.
+  - Image ke upar "Rice • Feed • Wheat • Pulses" ka ShieldCheck badge.
+* Restored 100% Pure Batches Box:
+  - "4 Commodity Hubs" wala box user ke request par hata diya gaya hai.
+  - Blue color (bg-[#0B132B]) ko change karke elegant neutral Charcoal Black
+    (bg-[#141518]) aur amber-gold border glow kar diya gaya hai.
+  - Box me "100% Pure Batches" (Lab Tested & Certified Specifications) aur
+    "Guaranteed Purity" ka pill badge lagaya gaya hai.
+
+--------------------------------------------------------------------------------
+11. WHY CHOOSE ATTRI NEXUS (6 PILLARS)
+--------------------------------------------------------------------------------
+File Path: frontend/src/pages/HomePage.tsx
+
+Kya changes / information add ki gayi:
+* Staggered Scroll Entrance:
+  - 6 commitments cards (Farm Direct, Lab Testing, Cold Storage, etc.)
+    scroll par ek-ek karke upar reveal hote hain.
+  - Hover karne par gold border shine aur elevation effect.
+
+================================================================================
+SUMMARY OF FILES TOUCHED:
+1. frontend/src/components/layout/Navbar.tsx
+2. frontend/src/components/layout/WhatsAppFloatingBtn.tsx
+3. frontend/src/components/ui/ProductCard.tsx
+4. frontend/src/components/ui/TrustStrip.tsx
+5. frontend/src/components/ui/ModalEnquiry.tsx
+6. frontend/src/pages/HomePage.tsx
+
+CURRENT GIT BRANCH: test (All commits pushed to GitHub)
+VERCEL PRODUCTION: Auto-sync / CLI deployed
+================================================================================

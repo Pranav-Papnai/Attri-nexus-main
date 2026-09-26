@@ -1,0 +1,451 @@
+================================================================================
+           ATTRI NEXUS — COMPLETE STEP-BY-STEP API TESTING GUIDE
+================================================================================
+Base URL: http://localhost:3001
+Format:   JSON (application/json)
+
+DEFAULT ADMIN CREDENTIALS:
+- Email:    admin@attrinexus.com
+- Password: AttriAdmin2026!
+
+--------------------------------------------------------------------------------
+QUICK OVERVIEW OF AUTHENTICATION IN POSTMAN / THUNDERCLIENT:
+--------------------------------------------------------------------------------
+1. First run Step 2 (POST /api/auth/login).
+2. Copy the "token" value from the response (without the quotes).
+3. For all Admin-Only endpoints (Steps 3, 4, 6, 7, 9, 10, 11, 12):
+   - In Postman, go to the "Authorization" tab.
+   - Select Type: "Bearer Token".
+   - Paste the token into the "Token" field.
+   (OR under "Headers" tab, add Key: Authorization | Value: Bearer <your_token>)
+
+================================================================================
+STEP 1: HEALTH CHECK (Check Server & Database Status)
+================================================================================
+Description: Verifies that backend server and MongoDB database are connected.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: GET
+2. Enter URL: http://localhost:3001/api/health
+3. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "uptime": 25,
+  "dbConfigured": true,
+  "dbConnected": true,
+  "env": "development",
+  "features": {
+    "storage": true,
+    "captcha": true,
+    "email": true
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X GET http://localhost:3001/api/health
+
+
+================================================================================
+STEP 2: ADMIN LOGIN (Get Bearer JWT Token)
+================================================================================
+Description: Authenticates admin user and returns a 7-day JWT token.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: POST
+2. Enter URL: http://localhost:3001/api/auth/login
+3. Click on the "Body" tab (next to Headers).
+4. Select the "raw" radio button.
+5. In the dropdown on the right, select "JSON".
+6. Paste this JSON into the text box:
+{
+  "email": "admin@attrinexus.com",
+  "password": "AttriAdmin2026!"
+}
+7. Click "Send" button.
+8. COPY THE "token" STRING FROM THE RESPONSE TO USE IN NEXT STEPS.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "email": "admin@attrinexus.com",
+    "name": "Attri Nexus Administrator",
+    "role": "admin"
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"admin@attrinexus.com\",\"password\":\"AttriAdmin2026!\"}"
+
+
+================================================================================
+STEP 3: GET CURRENT ADMIN PROFILE (/api/auth/me)
+================================================================================
+Description: Validates that your Bearer JWT token is active and returns admin data.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: GET
+2. Enter URL: http://localhost:3001/api/auth/me
+3. Click on the "Authorization" tab.
+4. Select Type: "Bearer Token".
+5. Paste your JWT Token from Step 2 into the "Token" field.
+6. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "user": {
+    "email": "admin@attrinexus.com",
+    "name": "Attri Nexus Administrator",
+    "role": "admin"
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X GET http://localhost:3001/api/auth/me \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+
+
+================================================================================
+STEP 4: REGISTER NEW ADMIN USER (Admin Only)
+================================================================================
+Description: Creates another admin user (can only be called by an existing admin).
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: POST
+2. Enter URL: http://localhost:3001/api/auth/register
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Body" tab -> select "raw" -> select "JSON".
+5. Paste this JSON:
+{
+  "email": "manager@attrinexus.com",
+  "password": "ManagerPass2026!",
+  "name": "Trade Desk Manager"
+}
+6. Click "Send" button.
+
+EXPECTED STATUS: 201 Created
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "user": {
+    "email": "manager@attrinexus.com",
+    "name": "Trade Desk Manager",
+    "role": "admin"
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -d "{\"email\":\"manager@attrinexus.com\",\"password\":\"ManagerPass2026!\",\"name\":\"Trade Desk Manager\"}"
+
+
+================================================================================
+STEP 5: LIST ALL PRODUCTS (Public Storefront API)
+================================================================================
+Description: Fetches the catalogue of all 4 commodities (Rice, Feed, Wheat, Pulses).
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: GET
+2. Enter URL: http://localhost:3001/api/products
+3. No authentication needed (Public API).
+4. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "data": [
+    {
+      "id": "rice-pusa-1121-steam",
+      "slug": "rice-pusa-1121-steam",
+      "name": "Pusa 1121 Steam Basmati Rice",
+      "variety": "1121 Basmati (Aged 2+ Years)",
+      "category": "Rice",
+      "description": "Extra long grain aged steam basmati with elongation ratio up to 2.5x.",
+      "image": "/images/products/attri_1121_basmati.jpg",
+      "features": ["8.35mm Avg Grain Length", "2+ Yrs Aged"],
+      "packagingSizes": ["25kg PP Bag", "50kg HDPE Bag"],
+      "isFeatured": true,
+      "isActive": true
+    }
+  ]
+}
+
+TERMINAL / CURL COMMAND:
+curl -X GET http://localhost:3001/api/products
+
+
+================================================================================
+STEP 6: CREATE / UPDATE PRODUCT (Admin Only)
+================================================================================
+Description: Adds a new product or updates an existing product in the database.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: POST
+2. Enter URL: http://localhost:3001/api/products
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Body" tab -> select "raw" -> select "JSON".
+5. Paste this JSON:
+{
+  "id": "sharbati-chakki-atta-10kg",
+  "slug": "sharbati-chakki-atta-10kg",
+  "name": "MP Sharbati Chakki Fresh Atta",
+  "variety": "100% Whole Wheat Grain (Sehore MP)",
+  "brandLine": "Attri Nexus Gold Grain",
+  "category": "Wheat and Wheat Flour",
+  "description": "Traditional cold stone-ground whole wheat atta. High fiber, 0% maida.",
+  "image": "/images/products/attri_sharbati_atta.jpg",
+  "features": [
+    "100% MP Sharbati Whole Grain",
+    "Cold Slow Stone Ground",
+    "High Dietary Fiber",
+    "Zero Preservatives"
+  ],
+  "specifications": {
+    "Moisture": "Max 11.5%",
+    "Protein": "Min 12.8%",
+    "Granulation": "98% through 60 mesh"
+  },
+  "packagingSizes": ["10kg Poly Pack", "25kg Bag", "50kg Sack"],
+  "culinaryUses": ["Soft Rotis", "Stuffed Parathas"],
+  "isFeatured": true,
+  "isActive": true,
+  "themePrimary": "#C5A059",
+  "themeAccent": "#B22234"
+}
+6. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "data": {
+    "id": "sharbati-chakki-atta-10kg",
+    "slug": "sharbati-chakki-atta-10kg",
+    "name": "MP Sharbati Chakki Fresh Atta",
+    "category": "Wheat and Wheat Flour",
+    "isActive": true
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X POST http://localhost:3001/api/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -d "{\"id\":\"sharbati-chakki-atta-10kg\",\"slug\":\"sharbati-chakki-atta-10kg\",\"name\":\"MP Sharbati Chakki Fresh Atta\",\"variety\":\"100% Whole Wheat\",\"category\":\"Wheat and Wheat Flour\",\"description\":\"Cold stone ground atta.\",\"image\":\"/images/products/attri_sharbati_atta.jpg\",\"features\":[\"100% MP Grain\"],\"packagingSizes\":[\"25kg Bag\"],\"isFeatured\":true,\"isActive\":true}"
+
+
+================================================================================
+STEP 7: DELETE PRODUCT (Admin Only)
+================================================================================
+Description: Deletes a product by its ID.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: DELETE
+2. Enter URL: http://localhost:3001/api/products/sharbati-chakki-atta-10kg
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true
+}
+
+TERMINAL / CURL COMMAND:
+curl -X DELETE http://localhost:3001/api/products/sharbati-chakki-atta-10kg \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+
+
+================================================================================
+STEP 8: SUBMIT TRADE ENQUIRY / LEAD (Public Lead Capture)
+================================================================================
+Description: Submits a commercial quotation request from the website forms.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: POST
+2. Enter URL: http://localhost:3001/api/inquiries
+3. Click "Body" tab -> select "raw" -> select "JSON".
+4. Paste this JSON:
+{
+  "name": "Vikram Malhotra",
+  "email": "vikram.malhotra@agritrade.com",
+  "phone": "+91 9811223344",
+  "company_name": "Malhotra Agro Global",
+  "product_id": "Pusa 1121 Steam Basmati Rice",
+  "quantity": "100 Metric Tons",
+  "message": "Please share FOB Mundra port pricing and delivery schedule for export to Dubai.",
+  "source": "bulk-enquiry-page",
+  "captcha_token": "dev-token-test"
+}
+5. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "data": {
+    "id": "674dfa12b890c123456789ab",
+    "name": "Vikram Malhotra",
+    "email": "vikram.malhotra@agritrade.com",
+    "phone": "+91 9811223344",
+    "company_name": "Malhotra Agro Global",
+    "status": "new",
+    "created_at": "2026-09-02T11:30:00.000Z"
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X POST http://localhost:3001/api/inquiries \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"Vikram Malhotra\",\"email\":\"vikram.malhotra@agritrade.com\",\"phone\":\"+919811223344\",\"company_name\":\"Malhotra Agro Global\",\"product_id\":\"Pusa 1121 Basmati\",\"quantity\":\"100 MT\",\"message\":\"Export quote needed.\",\"source\":\"bulk-enquiry-page\"}"
+
+
+================================================================================
+STEP 9: LIST ALL TRADE INQUIRIES (Admin Only)
+================================================================================
+Description: Retrieves all customer enquiries submitted through the website.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: GET
+2. Enter URL: http://localhost:3001/api/inquiries
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "data": [
+    {
+      "id": "674dfa12b890c123456789ab",
+      "name": "Vikram Malhotra",
+      "email": "vikram.malhotra@agritrade.com",
+      "phone": "+91 9811223344",
+      "company_name": "Malhotra Agro Global",
+      "product_id": "Pusa 1121 Basmati",
+      "quantity": "100 MT",
+      "status": "new",
+      "source": "bulk-enquiry-page",
+      "created_at": "2026-09-02T11:30:00.000Z"
+    }
+  ]
+}
+
+TERMINAL / CURL COMMAND:
+curl -X GET http://localhost:3001/api/inquiries \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+
+
+================================================================================
+STEP 10: UPDATE INQUIRY STATUS (Admin Only)
+================================================================================
+Description: Updates lead status ("new" -> "contacted" -> "quoted" -> "closed" -> "archived").
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: PATCH
+2. Enter URL: http://localhost:3001/api/inquiries/<PASTE_INQUIRY_ID_FROM_STEP_9>/status
+   (Example: http://localhost:3001/api/inquiries/674dfa12b890c123456789ab/status)
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Body" tab -> select "raw" -> select "JSON".
+5. Paste this JSON:
+{
+  "status": "contacted"
+}
+6. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "data": {
+    "id": "674dfa12b890c123456789ab",
+    "status": "contacted"
+  }
+}
+
+TERMINAL / CURL COMMAND:
+curl -X PATCH http://localhost:3001/api/inquiries/<INQUIRY_ID>/status \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -d "{\"status\":\"contacted\"}"
+
+
+================================================================================
+STEP 11: DELETE INQUIRY (Admin Only)
+================================================================================
+Description: Deletes a spam or test inquiry from the database.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: DELETE
+2. Enter URL: http://localhost:3001/api/inquiries/<PASTE_INQUIRY_ID_FROM_STEP_9>
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true
+}
+
+TERMINAL / CURL COMMAND:
+curl -X DELETE http://localhost:3001/api/inquiries/<INQUIRY_ID> \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+
+
+================================================================================
+STEP 12: UPLOAD PRODUCT IMAGE (Admin Only - Cloudinary)
+================================================================================
+Description: Uploads a product photo encoded as base64 and returns public CDN URL.
+
+POSTMAN / THUNDER CLIENT STEPS:
+1. Select Method: POST
+2. Enter URL: http://localhost:3001/api/upload-image
+3. Under "Authorization" tab -> Type: "Bearer Token" -> Paste your JWT token.
+4. Click "Body" tab -> select "raw" -> select "JSON".
+5. Paste this 1x1 test image base64 JSON:
+{
+  "fileName": "sample-wheat-bag.png",
+  "contentType": "image/png",
+  "fileBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+}
+6. Click "Send" button.
+
+EXPECTED STATUS: 200 OK
+EXPECTED RESPONSE BODY:
+{
+  "success": true,
+  "url": "https://res.cloudinary.com/vn93g18s/image/upload/v.../products/sample-wheat-bag.png"
+}
+
+TERMINAL / CURL COMMAND:
+curl -X POST http://localhost:3001/api/upload-image \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -d "{\"fileName\":\"sample.png\",\"contentType\":\"image/png\",\"fileBase64\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"}"
+
+
+================================================================================
+SUMMARY OF TESTING FLOW:
+================================================================================
+1. Test Health -> Check if dbConnected is true.
+2. Test Login  -> Get JWT Token.
+3. Test Me     -> Verify token works.
+4. Test Products -> Create, List, and Delete products.
+5. Test Inquiries -> Submit lead from public, view & update status as Admin.
+6. Test Upload -> Upload image to Cloudinary.
+
+All steps verified and ready for testing!
+================================================================================
+JWT TOKEN = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YTk4MGRlZTQ2NmMzYzQ3NGYzNWM3OTIiLCJlbWFpbCI6Im1hbmFnZXJAYXR0cmluZXh1cy5jb20iLCJpYXQiOjE3ODgzNjg3ODEsImV4cCI6MTc4ODk3MzU4MX0.13MnAdcx28g0wHgtse5tnzzFqZvsygcK7pIOMjQ18IA
