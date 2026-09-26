@@ -35,7 +35,8 @@ if (isConfigured) {
 const app = createApp();
 const server = app.listen(PORT, () => {
   console.log(`\n  Attri Nexus API  ·  ${NODE_ENV}`);
-  console.log(`  http://localhost:${PORT}/api/health\n`);
+  console.log(`  Health Check:  http://localhost:${PORT}/api/health`);
+  console.log(`  Swagger UI:    http://localhost:${PORT}/api/docs\n`);
 });
 
 // Without this the process ignores container stop signals and gets SIGKILLed
