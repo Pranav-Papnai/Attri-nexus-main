@@ -47,7 +47,7 @@ jobs:
       - name: Build Frontend Application
         working-directory: ./frontend
         env:
-          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAEbYxH0hs9UIym6l' }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY || '' }}
         run: npm run build
 
   # ========================================================

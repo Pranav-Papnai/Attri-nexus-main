@@ -128,7 +128,7 @@ If you prefer managed cloud platforms without managing a Linux server:
 - Framework Preset: `Vite`
 - Environment Variables:
   - `VITE_API_BASE_URL`: `https://attri-nexus-api.onrender.com` (or your backend domain)
-  - `VITE_TURNSTILE_SITE_KEY`: `0x4AAAAAAEbYxH0hs9UIym6l`
+  - `VITE_TURNSTILE_SITE_KEY`: `<your-turnstile-site-key>`
 - Add your custom domain `attrinexus.com` in Vercel Settings -> Domains.
 
 ---
