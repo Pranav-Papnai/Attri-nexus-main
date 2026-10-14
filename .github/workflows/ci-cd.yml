@@ -122,39 +122,79 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ========================================================
-  # 3. Automated CD Deployment (Optional VPS / Server via SSH)
+  # 3. Automated CD Deployment to AWS EC2
   # ========================================================
-  deploy:
-    name: Deploy to Production Server
+  deploy-ec2:
+    name: Deploy to AWS EC2 Instance
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     steps:
-      - name: Check Deployment Secrets
-        id: check-secrets
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Verify EC2 Secrets
+        id: check-ec2-secrets
         run: |
-          if [ -n "${{ secrets.SERVER_HOST }}" ] && [ -n "${{ secrets.SERVER_USER }}" ]; then
-            echo "enabled=true" >> $GITHUB_OUTPUT
+          HOST="${{ secrets.EC2_HOST || secrets.SERVER_HOST }}"
+          KEY="${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}"
+          if [ -n "$HOST" ] && [ -n "$KEY" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+            echo "AWS EC2 secrets detected. Proceeding with deployment."
           else
-            echo "enabled=false" >> $GITHUB_OUTPUT
-            echo "Skipping automated SSH deploy step because SERVER_HOST or SERVER_USER secrets are not set."
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "::notice ::Skipping EC2 deployment. Please configure EC2_HOST and EC2_SSH_KEY in GitHub Repository Secrets."
           fi
 
-      - name: Deploy via SSH
-        if: steps.check-secrets.outputs.enabled == 'true'
+      - name: Prepare Deployment Directory on EC2
+        if: steps.check-ec2-secrets.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || '22' }}
+          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
+          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
           script: |
-            cd ${{ secrets.SERVER_APP_DIR || '~/attri-nexus' }}
-            echo "Pulling latest docker images..."
+            mkdir -p ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
+
+      - name: Copy docker-compose.yml to EC2
+        if: steps.check-ec2-secrets.outputs.configured == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
+          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
+          source: "docker-compose.yml"
+          target: ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
+
+      - name: Execute Docker Compose Deploy on EC2
+        if: steps.check-ec2-secrets.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
+          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
+          script: |
+            cd ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
+
+            echo "=== 1. Logging into Docker Hub (if token provided) ==="
+            if [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+              echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME || env.DOCKER_USER }}" --password-stdin
+            fi
+
+            echo "=== 2. Pulling latest images from Docker Hub ==="
             docker compose pull
-            echo "Restarting containers..."
+
+            echo "=== 3. Starting updated containers in detached mode ==="
             docker compose up -d --remove-orphans
-            echo "Cleaning unused images..."
+
+            echo "=== 4. Checking container health status ==="
+            docker compose ps
+
+            echo "=== 5. Cleaning dangling images to save EC2 disk space ==="
             docker image prune -af --filter "until=24h"
-            echo "Deployment completed successfully!"
+
+            echo "🚀 Deployment to AWS EC2 completed successfully!"
