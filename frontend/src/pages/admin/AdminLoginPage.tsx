@@ -37,7 +37,6 @@ export const AdminLoginPage: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState<string | null>(null);
-  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
   const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
 
   const from = (location.state as any)?.from?.pathname || '/admin/dashboard';
@@ -72,16 +71,11 @@ export const AdminLoginPage: React.FC = () => {
     e.preventDefault();
     setForgotError(null);
     setForgotLoading(true);
-    setDevOtpCode(null);
 
     const res = await requestPasswordReset(forgotEmail);
     setForgotLoading(false);
 
     if (res.success) {
-      if (res.devOtp) {
-        setDevOtpCode(res.devOtp);
-        setResetOtp(res.devOtp); // prefill for easy testing
-      }
       setForgotSuccessMsg(res.message || 'Verification code dispatched.');
       setForgotStep(2);
     } else {
@@ -121,7 +115,6 @@ export const AdminLoginPage: React.FC = () => {
     setShowForgotModal(false);
     setForgotStep(1);
     setForgotError(null);
-    setDevOtpCode(null);
     setResetOtp('');
     setNewPassword('');
     setConfirmPassword('');
@@ -189,7 +182,7 @@ export const AdminLoginPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="admin@attrinexus.com"
+                  placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-[#0C1015] border border-white/15 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#C5A059] focus:border-transparent transition-all"
@@ -311,7 +304,7 @@ export const AdminLoginPage: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder="admin@attrinexus.com"
+                      placeholder="you@company.com"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-[#0C1015] border border-white/15 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#C5A059] transition-all"
@@ -345,21 +338,6 @@ export const AdminLoginPage: React.FC = () => {
                   <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                     <span>{forgotSuccessMsg}</span>
-                  </div>
-                )}
-
-                {/* Dev/Local OTP Banner */}
-                {devOtpCode && (
-                  <div className="p-3 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/40 text-xs">
-                    <div className="flex items-center justify-between text-[#DFD1BA] font-semibold mb-1">
-                      <span>🔑 Verification Code:</span>
-                      <span className="font-mono text-base tracking-widest text-[#C5A059] bg-[#0C1015] px-2 py-0.5 rounded border border-[#C5A059]/40">
-                        {devOtpCode}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-gray-400">
-                      Code is auto-filled for instant testing.
-                    </p>
                   </div>
                 )}
 

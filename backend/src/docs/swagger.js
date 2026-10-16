@@ -143,7 +143,7 @@ You can obtain a JWT token by calling \`POST /api/auth/login\`, then click the *
         required: ['email', 'password'],
         properties: {
           email: { type: 'string', example: 'admin@attrinexus.com' },
-          password: { type: 'string', example: 'AttriAdmin2026!' }
+          password: { type: 'string', example: '<your-admin-password>' }
         }
       },
       LoginResponse: {
@@ -411,7 +411,7 @@ You can obtain a JWT token by calling \`POST /api/auth/login\`, then click the *
                 required: ['email', 'password'],
                 properties: {
                   email: { type: 'string', example: 'manager@attrinexus.com' },
-                  password: { type: 'string', example: 'AttriAdmin2026!' },
+                  password: { type: 'string', example: '<your-admin-password>' },
                   name: { type: 'string', example: 'Trade Desk Manager' },
                   role: { type: 'string', example: 'Commercial Admin' }
                 }

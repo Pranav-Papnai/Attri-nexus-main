@@ -2,12 +2,13 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AdminUser } from '../db/models/AdminUser.js';
+import mongoose from 'mongoose';
+import { AdminUser, ADMIN_ROLES, SUPER_ADMIN } from '../db/models/AdminUser.js';
 import { LoginAttempt } from '../db/models/LoginAttempt.js';
 import { PasswordReset } from '../db/models/PasswordReset.js';
 import { sendPasswordResetEmail } from '../lib/email.js';
-import { JWT_SECRET, TOKEN_TTL } from '../config.js';
-import { requireAdmin } from '../middleware/requireAdmin.js';
+import { JWT_SECRET, TOKEN_TTL, NODE_ENV } from '../config.js';
+import { requireAdmin, requireSuperAdmin } from '../middleware/requireAdmin.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
 import { asyncHandler } from '../middleware/errors.js';
 import { revokeToken } from '../lib/revocation.js';
@@ -20,6 +21,14 @@ const BCRYPT_ROUNDS = 12;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128; // Defend against Long Password DoS (bcrypt CPU exhaustion)
 const MAX_EMAIL_LENGTH = 254; // RFC 5321 maximum email address length
+const MAX_RESET_ATTEMPTS = 5;
+const DEFAULT_ROLE = 'Commercial Admin';
+
+const issueToken = (user) =>
+  jwt.sign({ sub: String(user._id), email: user.email, jti: crypto.randomUUID() }, JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: TOKEN_TTL
+  });
 
 // Compared against when no account matches, so a request for an address that
 // does not exist still spends the same time inside bcrypt. Without it the
@@ -89,9 +98,7 @@ router.post(
     // getting it right is not still part-way to a lockout.
     await LoginAttempt.deleteMany({ email: normalizedEmail, ip });
 
-    const token = jwt.sign({ sub: String(user._id), email: user.email, jti: crypto.randomUUID() }, JWT_SECRET, {
-      expiresIn: TOKEN_TTL
-    });
+    const token = issueToken(user);
 
     res.status(200).json({
       success: true,
@@ -131,10 +138,11 @@ router.get(
   })
 );
 
-// GET /api/auth/users - list all admin accounts (requires authenticated admin)
+// GET /api/auth/users - list all admin accounts (Super Admin only)
 router.get(
   '/users',
   requireAdmin,
+  requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const users = await AdminUser.find({}, 'email name role createdAt updatedAt').sort({ createdAt: -1 }).lean();
     res.status(200).json({
@@ -150,16 +158,23 @@ router.get(
   })
 );
 
-// POST /api/auth/register - only an already-authenticated admin can create
-// another one. There is deliberately no public signup route.
+// POST /api/auth/register - only an already-authenticated Super Admin can
+// create another admin. There is deliberately no public signup route.
 router.post(
   '/register',
   requireAdmin,
+  requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const { email, password, name, role } = req.body || {};
 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@') || email.length > MAX_EMAIL_LENGTH) {
       res.status(400).json({ success: false, error: 'A valid email address is required' });
+      return;
+    }
+
+    const assignedRole = role === undefined || role === '' ? DEFAULT_ROLE : String(role).trim();
+    if (!ADMIN_ROLES.includes(assignedRole)) {
+      res.status(400).json({ success: false, error: `Role must be one of: ${ADMIN_ROLES.join(', ')}` });
       return;
     }
 
@@ -184,8 +199,8 @@ router.post(
       const user = await AdminUser.create({
         email: normalizedEmail,
         passwordHash,
-        name: name ? String(name).trim() : undefined,
-        role: role ? String(role).trim() : 'admin'
+        name: name ? String(name).trim().slice(0, 100) : undefined,
+        role: assignedRole
       });
 
       res.status(200).json({
@@ -204,14 +219,22 @@ router.post(
   })
 );
 
-// DELETE /api/auth/users/:id - remove admin access (cannot delete self)
+// DELETE /api/auth/users/:id - remove admin access (Super Admin only, cannot
+// delete self). Deleted admins lose access at once: requireAdmin re-reads the
+// account on every request.
 router.delete(
   '/users/:id',
   requireAdmin,
+  requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (String(req.admin.sub) === String(id)) {
       res.status(400).json({ success: false, error: 'You cannot delete your own active admin account.' });
+      return;
+    }
+
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ success: false, error: 'Admin user not found' });
       return;
     }
 
@@ -225,13 +248,21 @@ router.delete(
   })
 );
 
-// PATCH /api/auth/users/:id/password - update/reset password for an admin user
+// PATCH /api/auth/users/:id/password - any admin may change their own
+// password; only a Super Admin may set someone else's. Every existing session
+// of that account is ended; changing your own returns a fresh token.
 router.patch(
   '/users/:id/password',
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body || {};
+    const isSelf = String(req.admin.sub) === String(id);
+
+    if (!isSelf && req.adminUser.role !== SUPER_ADMIN) {
+      res.status(403).json({ success: false, error: "Only a Super Admin can change another admin's password." });
+      return;
+    }
 
     if (
       !newPassword ||
@@ -246,16 +277,21 @@ router.patch(
       return;
     }
 
-    const user = await AdminUser.findById(id);
+    const user = mongoose.isValidObjectId(id) ? await AdminUser.findById(id) : null;
     if (!user) {
       res.status(404).json({ success: false, error: 'Admin user not found' });
       return;
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    user.passwordChangedAt = new Date();
     await user.save();
 
-    res.status(200).json({ success: true, message: 'Password updated successfully.' });
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully.',
+      ...(isSelf ? { token: issueToken(user) } : {})
+    });
   })
 );
 
@@ -303,14 +339,15 @@ router.post(
       otp
     });
 
-    const isDev = process.env.NODE_ENV !== 'production';
+    // The code must never appear in the HTTP response: anyone can call this
+    // endpoint with an admin's address. Locally it goes to the server console.
+    if (!emailRes.sent && NODE_ENV === 'development') {
+      console.log(`[dev] Password reset code for ${normalizedEmail}: ${otp}`);
+    }
 
     res.status(200).json({
       success: true,
-      message: 'If an admin account matches this address, a reset code has been sent.',
-      emailSent: emailRes.sent,
-      // In development or when mail is not configured, provide devOtp so testing and local usage is frictionless
-      ...(isDev || !emailRes.sent ? { devOtp: otp } : {})
+      message: 'If an admin account matches this address, a reset code has been sent.'
     });
   })
 );
@@ -349,17 +386,36 @@ router.post(
     const cleanOtp = otp.trim();
     const otpHash = crypto.createHash('sha256').update(cleanOtp).digest('hex');
 
-    const resetRecord = await PasswordReset.findOne({
-      email: normalizedEmail,
-      otpHash,
-      expiresAt: { $gt: new Date() }
-    });
-
-    if (!resetRecord) {
+    const invalidCode = () =>
       res.status(400).json({
         success: false,
         error: 'Invalid or expired reset code. Please request a new code.'
       });
+
+    // Atomically claim one guess against the live code before comparing, so
+    // parallel requests cannot squeeze in more than MAX_RESET_ATTEMPTS.
+    const resetRecord = await PasswordReset.findOneAndUpdate(
+      {
+        email: normalizedEmail,
+        expiresAt: { $gt: new Date() },
+        attempts: { $lt: MAX_RESET_ATTEMPTS }
+      },
+      { $inc: { attempts: 1 } },
+      { returnDocument: 'after' }
+    );
+
+    if (!resetRecord) {
+      invalidCode();
+      return;
+    }
+
+    const matches = crypto.timingSafeEqual(Buffer.from(resetRecord.otpHash, 'hex'), Buffer.from(otpHash, 'hex'));
+
+    if (!matches) {
+      if (resetRecord.attempts >= MAX_RESET_ATTEMPTS) {
+        await PasswordReset.deleteOne({ _id: resetRecord._id });
+      }
+      invalidCode();
       return;
     }
 
@@ -371,15 +427,16 @@ router.post(
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     user.passwordHash = passwordHash;
+    // Ends every session that existed before the reset, including one an
+    // attacker may hold - which is often why the reset is happening.
+    user.passwordChangedAt = new Date();
     await user.save();
 
     // Clean up reset token and any login lockout
     await PasswordReset.deleteMany({ email: normalizedEmail });
     await LoginAttempt.deleteMany({ email: normalizedEmail });
 
-    const token = jwt.sign({ sub: String(user._id), email: user.email, jti: crypto.randomUUID() }, JWT_SECRET, {
-      expiresIn: TOKEN_TTL
-    });
+    const token = issueToken(user);
 
     res.status(200).json({
       success: true,

@@ -19,8 +19,21 @@ if (process.env.NODE_ENV !== 'test') {
   }
 }
 
-export const NODE_ENV = process.env.NODE_ENV || 'development';
+// Unset means production: forgetting the variable on a server must never
+// switch on development conveniences (CAPTCHA test tokens, detailed errors,
+// public API docs). Local development sets NODE_ENV=development in .env.local.
+export const NODE_ENV = process.env.NODE_ENV || 'production';
 export const IS_PROD = NODE_ENV === 'production';
+
+// How many reverse proxies sit in front of this process. req.ip, and with it
+// every per-IP rate limit and lockout, is read from X-Forwarded-For this many
+// hops back, so it must match the real chain exactly: too high and clients can
+// forge their IP, too low and every visitor shares the proxy's IP.
+// 1 = nginx only (or a PaaS router); docker-compose sets 2 (Caddy -> nginx).
+export const TRUST_PROXY_HOPS = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10) || 0;
+
+// Swagger UI maps out every admin endpoint, so production serves it only on request.
+export const API_DOCS_ENABLED = !IS_PROD || process.env.ENABLE_API_DOCS === 'true';
 
 // 3001 is not arbitrary: frontend/vite.config.ts proxies /api there by
 // default, and the frontend is not being modified.

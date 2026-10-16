@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import { openapiSpec } from './docs/swagger.js';
-import { CORS_ORIGINS, JSON_BODY_LIMIT, NODE_ENV, IS_PROD } from './config.js';
+import { CORS_ORIGINS, JSON_BODY_LIMIT, NODE_ENV, IS_PROD, TRUST_PROXY_HOPS, API_DOCS_ENABLED } from './config.js';
 import { isConfigured, isConnected } from './db/connect.js';
 import { isStorageConfigured } from './lib/storage.js';
 import { isTurnstileConfigured } from './lib/turnstile.js';
@@ -20,10 +20,9 @@ import { sanitizeRequest } from './middleware/sanitize.js';
 export function createApp() {
   const app = express();
 
-  // Behind one proxy (Render/Railway/Fly/nginx) so req.ip is the real client
-  // rather than the proxy - the login and enquiry rate limits key off it, and
-  // would otherwise treat every visitor as the same address.
-  app.set('trust proxy', 1);
+  // req.ip must be the real client rather than the proxy - the login and
+  // enquiry rate limits key off it. See TRUST_PROXY_HOPS in config.js.
+  app.set('trust proxy', TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
 
   // contentSecurityPolicy is off because this process serves JSON only; the
@@ -91,25 +90,27 @@ export function createApp() {
   app.use('/api/inquiries', requireDatabase, inquiryRoutes);
   app.use('/api/upload-image', uploadRoutes);
 
-  // OpenAPI JSON Specification
-  app.get('/api/docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.json(openapiSpec);
-  });
+  if (API_DOCS_ENABLED) {
+    // OpenAPI JSON Specification
+    app.get('/api/docs.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.json(openapiSpec);
+    });
 
-  // Swagger UI Interactive API Documentation
-  app.use(
-    '/api/docs',
-    swaggerUi.serve,
-    swaggerUi.setup(openapiSpec, {
-      customSiteTitle: 'Attri Nexus REST API Docs & Swagger UI',
-      customCss: `
-        .topbar { background-color: #0D3B2E !important; border-bottom: 2px solid #C5A059; }
-        .swagger-ui .btn.authorize { background-color: #0D3B2E; color: #FFFFFF; border-color: #C5A059; }
-        .swagger-ui .btn.authorize svg { fill: #C5A059; }
-      `
-    })
-  );
+    // Swagger UI Interactive API Documentation
+    app.use(
+      '/api/docs',
+      swaggerUi.serve,
+      swaggerUi.setup(openapiSpec, {
+        customSiteTitle: 'Attri Nexus REST API Docs & Swagger UI',
+        customCss: `
+          .topbar { background-color: #0D3B2E !important; border-bottom: 2px solid #C5A059; }
+          .swagger-ui .btn.authorize { background-color: #0D3B2E; color: #FFFFFF; border-color: #C5A059; }
+          .swagger-ui .btn.authorize svg { fill: #C5A059; }
+        `
+      })
+    );
+  }
 
   app.use(notFound);
   app.use(errorHandler);

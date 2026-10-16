@@ -65,7 +65,8 @@ before(async () => {
   await AdminUser.create({
     email: ADMIN_EMAIL,
     passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
-    name: 'Test Admin'
+    name: 'Test Admin',
+    role: 'Super Admin'
   });
 });
 
@@ -201,6 +202,47 @@ describe('auth', () => {
     assert.ok(!JSON.stringify(user).includes('another-good-password'));
   });
 
+  // The real code only ever leaves the server by email, so tests overwrite the
+  // stored hash with one for a code they know.
+  const plantResetCode = async (email, otp) => {
+    const crypto = await import('node:crypto');
+    const { PasswordReset } = await import('../src/db/models/PasswordReset.js');
+    await PasswordReset.updateOne(
+      { email },
+      { $set: { otpHash: crypto.createHash('sha256').update(otp).digest('hex'), attempts: 0 } }
+    );
+  };
+
+  test('forgot-password never returns the reset code in the response', async () => {
+    const res = await api('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'admin@attri.test' })
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.devOtp, undefined);
+    assert.ok(!/\b\d{6}\b/.test(JSON.stringify(res.body)), 'response must not contain a 6-digit code');
+  });
+
+  test('a reset code is destroyed after 5 wrong guesses', async () => {
+    await api('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: 'admin@attri.test' }) });
+    await plantResetCode('admin@attri.test', '424242');
+
+    for (let i = 0; i < 5; i++) {
+      const wrong = await api('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'admin@attri.test', otp: String(100000 + i), newPassword: 'never-applied-1' })
+      });
+      assert.equal(wrong.status, 400);
+    }
+
+    const correctTooLate = await api('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'admin@attri.test', otp: '424242', newPassword: 'never-applied-1' })
+    });
+    assert.equal(correctTooLate.status, 400);
+  });
+
   test('forgot-password generates an OTP and allows resetting password', async () => {
     // 1. Request reset code
     const forgotRes = await api('/api/auth/forgot-password', {
@@ -209,8 +251,8 @@ describe('auth', () => {
     });
     assert.equal(forgotRes.status, 200);
     assert.equal(forgotRes.body.success, true);
-    assert.ok(forgotRes.body.devOtp, 'Should return devOtp in test environment');
-    const otp = forgotRes.body.devOtp;
+    const otp = '135790';
+    await plantResetCode('admin@attri.test', otp);
 
     // 2. Reject short password
     const shortRes = await api('/api/auth/reset-password', {
@@ -244,14 +286,124 @@ describe('auth', () => {
     assert.equal(newLoginRes.body.success, true);
 
     // 6. Reset back to original password for test consistency
-    const resetBack = await api('/api/auth/forgot-password', {
+    await api('/api/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email: 'admin@attri.test' })
     });
-    await api('/api/auth/reset-password', {
+    await plantResetCode('admin@attri.test', '246802');
+    const resetBack = await api('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', otp: resetBack.body.devOtp, newPassword: 'good-password-1' })
+      body: JSON.stringify({ email: 'admin@attri.test', otp: '246802', newPassword: 'good-password-1' })
     });
+    assert.equal(resetBack.status, 200);
+
+    // The resets ended every earlier session, including the one later tests use.
+    const stale = await api('/api/auth/me', { headers: asAdmin() });
+    assert.equal(stale.status, 401);
+    adminToken = resetBack.body.token;
+    assert.equal((await api('/api/auth/me', { headers: asAdmin() })).status, 200);
+  });
+});
+
+describe('roles and sessions', () => {
+  const COMMERCIAL_EMAIL = 'second@attri.test';
+  let commercialPassword = 'another-good-password';
+  let commercialToken;
+  let commercialId;
+
+  // iat has one-second resolution; a change in the same second as a login
+  // deliberately leaves that token valid, so tests step past the boundary.
+  const nextSecond = () => new Promise((resolve) => setTimeout(resolve, 1100));
+
+  const loginAs = async (email, password) => {
+    const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    assert.equal(res.status, 200);
+    return res.body.token;
+  };
+
+  before(async () => {
+    commercialToken = await loginAs(COMMERCIAL_EMAIL, commercialPassword);
+    commercialId = String((await AdminUser.findOne({ email: COMMERCIAL_EMAIL }).lean())._id);
+  });
+
+  test('new admins default to Commercial Admin', async () => {
+    const me = await api('/api/auth/me', { headers: asAdmin(commercialToken) });
+    assert.equal(me.body.user.role, 'Commercial Admin');
+  });
+
+  test('register rejects a role outside the allowed set', async () => {
+    const res = await api('/api/auth/register', {
+      method: 'POST',
+      headers: asAdmin(),
+      body: JSON.stringify({ email: 'oddrole@attri.test', password: 'longenough1', role: 'Owner' })
+    });
+    assert.equal(res.status, 400);
+  });
+
+  test('a Commercial Admin cannot manage admin accounts', async () => {
+    const h = asAdmin(commercialToken);
+    const superId = String((await AdminUser.findOne({ email: ADMIN_EMAIL }).lean())._id);
+
+    assert.equal((await api('/api/auth/users', { headers: h })).status, 403);
+    assert.equal(
+      (await api('/api/auth/register', {
+        method: 'POST',
+        headers: h,
+        body: JSON.stringify({ email: 'sneaky@attri.test', password: 'longenough1', role: 'Super Admin' })
+      })).status,
+      403
+    );
+    assert.equal((await api(`/api/auth/users/${superId}`, { method: 'DELETE', headers: h })).status, 403);
+    assert.equal(
+      (await api(`/api/auth/users/${superId}/password`, {
+        method: 'PATCH',
+        headers: h,
+        body: JSON.stringify({ newPassword: 'taken-over-123' })
+      })).status,
+      403
+    );
+    assert.ok(!(await AdminUser.exists({ email: 'sneaky@attri.test' })));
+  });
+
+  test('changing your own password returns a fresh token and ends the old session', async () => {
+    await nextSecond();
+    commercialPassword = 'commercial-new-pass-1';
+    const res = await api(`/api/auth/users/${commercialId}/password`, {
+      method: 'PATCH',
+      headers: asAdmin(commercialToken),
+      body: JSON.stringify({ newPassword: commercialPassword })
+    });
+    assert.equal(res.status, 200);
+    assert.ok(res.body.token);
+
+    assert.equal((await api('/api/auth/me', { headers: asAdmin(commercialToken) })).status, 401);
+    commercialToken = res.body.token;
+    assert.equal((await api('/api/auth/me', { headers: asAdmin(commercialToken) })).status, 200);
+  });
+
+  test("a Super Admin resetting someone's password ends that person's sessions", async () => {
+    await nextSecond();
+    const res = await api(`/api/auth/users/${commercialId}/password`, {
+      method: 'PATCH',
+      headers: asAdmin(),
+      body: JSON.stringify({ newPassword: 'set-by-super-admin-1' })
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.token, undefined, 'no token is handed out for someone else');
+    assert.equal((await api('/api/auth/me', { headers: asAdmin(commercialToken) })).status, 401);
+  });
+
+  test('a deleted admin loses access immediately', async () => {
+    const token = await loginAs(COMMERCIAL_EMAIL, 'set-by-super-admin-1');
+    assert.equal((await api('/api/auth/me', { headers: asAdmin(token) })).status, 200);
+
+    const del = await api(`/api/auth/users/${commercialId}`, { method: 'DELETE', headers: asAdmin() });
+    assert.equal(del.status, 200);
+    assert.equal((await api('/api/inquiries', { headers: asAdmin(token) })).status, 401);
+  });
+
+  test('a malformed admin id is a 404, not a 500', async () => {
+    assert.equal((await api('/api/auth/users/not-an-id', { method: 'DELETE', headers: asAdmin() })).status, 404);
   });
 });
 

@@ -761,11 +761,13 @@ export const AdminDashboardPage: React.FC = () => {
 
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
-    let pwd = 'Attri';
-    for (let i = 0; i < 7; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Math.random is predictable; account passwords need a CSPRNG. 16 chars
+    // from a 63-char alphabet is ~95 bits of entropy.
+    const bytes = crypto.getRandomValues(new Uint32Array(16));
+    let pwd = '';
+    for (const b of bytes) {
+      pwd += chars.charAt(b % chars.length);
     }
-    pwd += '!26';
     setNewAdminForm((prev) => ({ ...prev, password: pwd }));
     setShowNewAdminPassword(true);
   };
@@ -3061,7 +3063,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className={`p-3.5 rounded-xl border font-mono text-xs space-y-1.5 ${
                     isDark ? 'bg-[#0B0F15] border-white/10 text-gray-200' : 'bg-white border-[#D6CEC0] text-gray-800'
                   }`}>
-                    <div><span className="text-[#8A6828] dark:text-[#DFD1BA] font-bold">Portal URL:</span> http://localhost:5173/admin/login</div>
+                    <div><span className="text-[#8A6828] dark:text-[#DFD1BA] font-bold">Portal URL:</span> {`${window.location.origin}/admin/login`}</div>
                     <div><span className="text-[#8A6828] dark:text-[#DFD1BA] font-bold">Admin ID (Email):</span> {createdAdminCredentials.email}</div>
                     <div><span className="text-[#8A6828] dark:text-[#DFD1BA] font-bold">Password:</span> {createdAdminCredentials.password}</div>
                     <div><span className="text-[#8A6828] dark:text-[#DFD1BA] font-bold">Role:</span> {createdAdminCredentials.role}</div>
@@ -3070,7 +3072,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      const text = `Attri Nexus Admin Portal Credentials:\nPortal URL: http://localhost:5173/admin/login\nEmail / User ID: ${createdAdminCredentials.email}\nPassword: ${createdAdminCredentials.password}\nRole: ${createdAdminCredentials.role}`;
+                      const text = `Attri Nexus Admin Portal Credentials:\nPortal URL: ${window.location.origin}/admin/login\nEmail / User ID: ${createdAdminCredentials.email}\nPassword: ${createdAdminCredentials.password}\nRole: ${createdAdminCredentials.role}`;
                       navigator.clipboard.writeText(text);
                       setIsCopiedCredentials(true);
                       showToast('Credentials copied to clipboard!');

@@ -35,7 +35,7 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}`;
 
   const bcrypt = (await import('bcryptjs')).default;
-  await AdminUser.create({
+  const admin = await AdminUser.create({
     email: ADMIN_EMAIL,
     passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
     name: 'Verification Admin'
@@ -43,7 +43,7 @@ before(async () => {
 
   const jwt = (await import('jsonwebtoken')).default;
   adminToken = jwt.sign(
-    { id: 'admin_verify', email: ADMIN_EMAIL, role: 'admin' },
+    { sub: String(admin._id), email: ADMIN_EMAIL },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );

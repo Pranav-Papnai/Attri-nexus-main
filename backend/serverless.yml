@@ -12,7 +12,8 @@ provider:
     cors: true
   environment:
     NODE_ENV: production
-    JWT_SECRET: ${env:JWT_SECRET, 'attri_nexus_production_jwt_secret_key_2026_secure'}
+    # No fallback: a missing secret must fail the deploy, never ship a guessable one.
+    JWT_SECRET: ${env:JWT_SECRET}
     MONGODB_URI: ${env:MONGODB_URI, ''}
     CORS_ORIGIN: ${env:CORS_ORIGIN, '*'}
     CLOUDINARY_URL: ${env:CLOUDINARY_URL, ''}

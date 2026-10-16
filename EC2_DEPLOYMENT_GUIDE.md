@@ -11,9 +11,11 @@ Aapke EC2 instance ke **Security Group** mein yeh Inbound rules hone chahiye:
 | Type | Protocol | Port Range | Source | Description |
 |---|---|---|---|---|
 | **SSH** | TCP | `22` | `0.0.0.0/0` (ya aapka IP) | GitHub Actions SSH access |
-| **HTTP** | TCP | `80` | `0.0.0.0/0` | Frontend Web Traffic |
+| **HTTP** | TCP | `80` | `0.0.0.0/0` | HTTPS certificate verification + http→https redirect |
 | **HTTPS** | TCP | `443` | `0.0.0.0/0` | SSL/TLS Traffic |
-| **Custom TCP** | TCP | `3001` | `0.0.0.0/0` | Backend API (agar direct access chahiye) |
+| **Custom UDP** | UDP | `443` | `0.0.0.0/0` | HTTP/3 (optional) |
+
+> ⚠️ Port `3001` (backend) ko **kabhi bhi** public mat kholiye. Backend sirf Caddy → nginx ke through reachable hai; direct access se rate limits bypass ho sakte hain. Agar pehle se `3001` rule hai to use delete kar dijiye.
 
 ---
 
@@ -54,10 +56,12 @@ nano .env
 `.env` ke andar apne real credentials paste karein (Ctrl+O, Enter, Ctrl+X karke save karein):
 ```env
 JWT_SECRET=your_jwt_secret_here
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.atrloli.mongodb.net/attri_nexus?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<username>:<password>@<your-cluster>.mongodb.net/attri_nexus?retryWrites=true&w=majority
 PORT=3001
 NODE_ENV=production
-CORS_ORIGIN=http://localhost,http://localhost:80,http://<YOUR-EC2-PUBLIC-IP>
+# Automatic HTTPS (Let's Encrypt). Domain ka DNS A-record is EC2 ke public IP par point hona chahiye.
+SITE_ADDRESS=attrinexus.com, www.attrinexus.com
+CORS_ORIGIN=https://attrinexus.com,https://www.attrinexus.com
 CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
@@ -67,6 +71,8 @@ RESEND_API_KEY=re_123456789_your_resend_api_key_here
 ADMIN_NOTIFICATION_EMAIL=your_email@gmail.com
 FROM_EMAIL=Attri Nexus <onboarding@resend.dev>
 ```
+
+> 🔒 **HTTPS:** `SITE_ADDRESS` set hone par Caddy container khud certificate leta hai, renew karta hai, aur `http://` ko `https://` par redirect karta hai. Domain abhi nahi hai to `SITE_ADDRESS` hata dijiye — site plain HTTP par chalegi (sirf testing ke liye; admin password HTTP par unencrypted jaata hai). Tab `CORS_ORIGIN=http://<YOUR-EC2-PUBLIC-IP>` rakhiye.
 
 ---
 

@@ -14,7 +14,11 @@ const adminUserSchema = new mongoose.Schema(
     // plaintext value can never be written here by accident.
     passwordHash: { type: String, required: true },
     name: { type: String, trim: true, default: 'Admin' },
-    role: { type: String, default: 'admin' }
+    // Not an enum: accounts created before roles existed hold 'admin', which
+    // is treated as a non-super role. New accounts are limited to ADMIN_ROLES.
+    role: { type: String, default: 'Commercial Admin' },
+    // Any session issued before this instant is rejected by requireAdmin.
+    passwordChangedAt: { type: Date }
   },
   { timestamps: true, versionKey: false }
 );
@@ -30,4 +34,7 @@ adminUserSchema.set('toJSON', {
   }
 });
 
-export const AdminUser = mongoose.models.AdminUser || mongoose.model('AdminUser', adminUserSchema);
+export const SUPER_ADMIN = 'Super Admin';
+export const ADMIN_ROLES = [SUPER_ADMIN, 'Commercial Admin'];
+
+export const AdminUser =mongoose.models.AdminUser || mongoose.model('AdminUser', adminUserSchema);

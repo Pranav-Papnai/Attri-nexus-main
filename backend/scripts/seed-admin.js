@@ -20,8 +20,8 @@ async function main() {
     console.error('Usage: npm run seed:admin -- <email> <password> ["Full Name"]');
     process.exit(1);
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > 128) {
+    throw new Error(`Password must be between ${MIN_PASSWORD_LENGTH} and 128 characters`);
   }
   if (!isConfigured) {
     throw new Error('No database configured - set MONGODB_URI in .env.local first.');
@@ -36,6 +36,7 @@ async function main() {
 
   if (existing) {
     existing.passwordHash = passwordHash;
+    existing.passwordChangedAt = new Date();
     if (name) existing.name = name;
     existing.role = 'Super Admin';
     await existing.save();
