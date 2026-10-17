@@ -10,12 +10,12 @@
   },
   "devDependencies": {
     "@playwright/cli": "^0.1.18",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.64.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^26.4.1",
     "@vitejs/plugin-react": "^6.1.0",
     "autoprefixer": "^10.5.4",
-    "playwright": "^1.63.0-alpha-2026-08-05",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
@@ -39,5 +39,8 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
     "tailwind-merge": "^3.6.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

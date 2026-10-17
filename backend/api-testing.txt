@@ -4,7 +4,7 @@
 Base URL: http://localhost:3001
 Format:   JSON (application/json)
 
-ADMIN CREDENTIALS (create your own with: npm run seed:admin -- <email> "<password>"):
+ADMIN CREDENTIALS (create your own with: npm run seed:admin -- <email>   - it prompts for the password):
 - Email:    admin@attrinexus.com
 - Password: <your-admin-password>
 
@@ -71,7 +71,7 @@ EXPECTED STATUS: 200 OK
 EXPECTED RESPONSE BODY:
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "<JWT returned by the server>",
   "user": {
     "email": "admin@attrinexus.com",
     "name": "Attri Nexus Administrator",
@@ -448,4 +448,4 @@ SUMMARY OF TESTING FLOW:
 
 All steps verified and ready for testing!
 ================================================================================
-JWT TOKEN = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YTk4MGRlZTQ2NmMzYzQ3NGYzNWM3OTIiLCJlbWFpbCI6Im1hbmFnZXJAYXR0cmluZXh1cy5jb20iLCJpYXQiOjE3ODgzNjg3ODEsImV4cCI6MTc4ODk3MzU4MX0.13MnAdcx28g0wHgtse5tnzzFqZvsygcK7pIOMjQ18IA
+JWT TOKEN = <YOUR_JWT_TOKEN>

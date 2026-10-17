@@ -1,6 +1,7 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { deepSanitize, sanitizeString } from '../src/middleware/sanitize.js';
+import querystring from 'node:querystring';
+import { deepSanitize, parseQuerySafely } from '../src/middleware/sanitize.js';
 
 describe('Security & Injection Defense Suite', () => {
   test('strips NoSQL operator injection keys ($gt, $ne, $where, $regex, $expr)', () => {
@@ -51,20 +52,15 @@ describe('Security & Injection Defense Suite', () => {
     assert.equal({}.isAdmin, undefined, 'global Object prototype is completely unpolluted');
   });
 
-  test('disarms script tags and executable HTML injections', () => {
-    const xssScript = '<script>alert("XSS")</script>Hello World';
-    const sanitized = sanitizeString(xssScript);
-    assert.equal(sanitized, 'Hello World');
+  test('leaves string values untouched (output encoding is the XSS defence)', () => {
+    const body = { message: '<script>alert(1)</script> & won=derful' };
+    deepSanitize(body);
+    assert.equal(body.message, '<script>alert(1)</script> & won=derful');
+  });
 
-    const iframeXss = '<iframe src="https://evil.com"></iframe>Check this';
-    assert.equal(sanitizeString(iframeXss), 'Check this');
-
-    const jsUri = '<a href="javascript:alert(1)">Click</a>';
-    assert.ok(!sanitizeString(jsUri).includes('javascript:'));
-    assert.ok(sanitizeString(jsUri).includes('disarmed-uri:'));
-
-    const eventHandler = '<img src=x onerror=alert(document.cookie)>';
-    assert.ok(!sanitizeString(eventHandler).includes('onerror='));
-    assert.ok(sanitizeString(eventHandler).includes('disarmed-event='));
+  test('query strings are parsed flat and dangerous keys are dropped', () => {
+    const parsed = parseQuerySafely('limit=5&$where=1&a.b=2&__proto__=x&email[$ne]=y', querystring.parse);
+    assert.deepEqual(Object.keys(parsed).sort(), ['email[$ne]', 'limit']);
+    assert.equal(typeof parsed['email[$ne]'], 'string', 'brackets never become a nested operator object');
   });
 });

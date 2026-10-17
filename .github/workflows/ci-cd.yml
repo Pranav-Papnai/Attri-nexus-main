@@ -9,36 +9,53 @@ on:
       - main
   workflow_dispatch:
 
+# Least privilege: jobs only read the repository. Nothing here needs to write
+# to GitHub.
+permissions:
+  contents: read
+
 env:
   DOCKER_USER: akashiseijuro23
   BACKEND_IMAGE: akashiseijuro23/attri-backend
   FRONTEND_IMAGE: akashiseijuro23/attri-frontend
 
+# Third-party actions are pinned to full commit SHAs (tag in the comment) so a
+# moved or hijacked tag cannot change the code that runs with these secrets.
+# Dependabot (.github/dependabot.yml) proposes updates.
 jobs:
   # ========================================================
   # 1. Test & Build Validation (Frontend + Backend)
   # ========================================================
   validate:
-    name: Lint, Test & Build Validation
+    name: Test, Audit & Build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Install Backend Dependencies
         working-directory: ./backend
         run: npm ci
 
-      - name: Run Backend Syntax/Check
+      - name: Run Backend Tests (API, auth, security regressions)
         working-directory: ./backend
-        run: node -c src/index.js
+        run: npm test
+
+      - name: Audit Dependencies
+        run: |
+          npm audit --audit-level=high
+          npm audit --audit-level=high --prefix backend
+          npm audit --audit-level=high --prefix frontend
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
@@ -57,38 +74,37 @@ jobs:
     name: Build & Push Docker Images
     needs: validate
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME || env.DOCKER_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Extract Docker Metadata for Backend
+      # Every image is tagged with the full commit SHA, and that immutable tag
+      # is what production deploys. `latest` is only a convenience pointer.
       - name: Extract Backend Metadata
         id: meta-backend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ${{ env.BACKEND_IMAGE }}
           tags: |
+            type=sha,prefix=,format=long
             type=raw,value=latest
-            type=raw,value=v1
-            type=sha,prefix=,format=short
 
-      # Build and Push Backend Image
       - name: Build and Push Backend Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -98,20 +114,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Extract Docker Metadata for Frontend
       - name: Extract Frontend Metadata
         id: meta-frontend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ${{ env.FRONTEND_IMAGE }}
           tags: |
+            type=sha,prefix=,format=long
             type=raw,value=latest
-            type=raw,value=v1
-            type=sha,prefix=,format=short
 
-      # Build and Push Frontend Image
       - name: Build and Push Frontend Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
@@ -129,72 +142,78 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Add required reviewers to this environment in
+    # Settings -> Environments -> production to gate every deploy.
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+      EC2_PORT: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
+      APP_DIR: ${{ secrets.EC2_APP_DIR || 'attri-nexus' }}
+      IMAGE_TAG: ${{ github.sha }}
+      # A read-only (pull) token is enough here; it falls back to the push
+      # token only if no dedicated one is configured.
+      DOCKERHUB_PULL_USER: ${{ secrets.DOCKERHUB_USERNAME || 'akashiseijuro23' }} # gitleaks:allow (expression, not a secret)
+      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN || secrets.DOCKERHUB_TOKEN }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Verify EC2 Secrets
         id: check-ec2-secrets
+        env:
+          HAS_KEY: ${{ secrets.EC2_SSH_KEY != '' || secrets.SERVER_SSH_KEY != '' }}
         run: |
-          HOST="${{ secrets.EC2_HOST || secrets.SERVER_HOST }}"
-          KEY="${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}"
-          if [ -n "$HOST" ] && [ -n "$KEY" ]; then
-            echo "configured=true" >> $GITHUB_OUTPUT
+          if [ -n "$EC2_HOST" ] && [ "$HAS_KEY" = "true" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
             echo "AWS EC2 secrets detected. Proceeding with deployment."
           else
-            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice ::Skipping EC2 deployment. Please configure EC2_HOST and EC2_SSH_KEY in GitHub Repository Secrets."
           fi
 
-      - name: Prepare Deployment Directory on EC2
-        if: steps.check-ec2-secrets.outputs.configured == 'true'
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
-          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
-          key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
-          script: |
-            mkdir -p ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
-
       - name: Copy docker-compose.yml and Caddyfile to EC2
         if: steps.check-ec2-secrets.outputs.configured == 'true'
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
         with:
-          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
-          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
+          port: ${{ env.EC2_PORT }}
           source: "docker-compose.yml,Caddyfile"
-          target: ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
+          target: ${{ env.APP_DIR }}
 
       - name: Execute Docker Compose Deploy on EC2
         if: steps.check-ec2-secrets.outputs.configured == 'true'
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
-          host: ${{ secrets.EC2_HOST || secrets.SERVER_HOST }}
-          username: ${{ secrets.EC2_USER || secrets.SERVER_USER || 'ubuntu' }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY || secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || secrets.SERVER_PORT || '22' }}
+          port: ${{ env.EC2_PORT }}
+          # Values reach the server as environment variables, never pasted
+          # into the script text.
+          envs: APP_DIR,IMAGE_TAG,DOCKERHUB_PULL_USER,DOCKERHUB_PULL_TOKEN
           script: |
-            cd ${{ secrets.EC2_APP_DIR || '~/attri-nexus' }}
+            set -eu
+            cd "$APP_DIR"
 
-            echo "=== 1. Logging into Docker Hub (if token provided) ==="
-            if [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-              echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME || env.DOCKER_USER }}" --password-stdin
+            if [ -n "$DOCKERHUB_PULL_TOKEN" ]; then
+              echo "$DOCKERHUB_PULL_TOKEN" | docker login -u "$DOCKERHUB_PULL_USER" --password-stdin
             fi
 
-            echo "=== 2. Pulling latest images from Docker Hub ==="
-            docker compose pull
+            echo "=== Deploying commit $IMAGE_TAG ==="
+            IMAGE_TAG="$IMAGE_TAG" docker compose pull
+            IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
 
-            echo "=== 3. Starting updated containers in detached mode ==="
-            docker compose up -d --remove-orphans
+            # Do not leave registry credentials on the server's disk.
+            docker logout >/dev/null 2>&1 || true
 
-            echo "=== 4. Checking container health status ==="
             docker compose ps
-
-            echo "=== 5. Cleaning dangling images to save EC2 disk space ==="
             docker image prune -af --filter "until=24h"
-
-            echo "🚀 Deployment to AWS EC2 completed successfully!"
+            echo "Deployment of $IMAGE_TAG completed."

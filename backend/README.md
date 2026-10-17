@@ -8,7 +8,7 @@ The API for the Attri Nexus storefront and admin dashboard. Express 5 + MongoDB
 ```bash
 cp .env.example .env.local            # in the repo root, then fill it in
 npm install                           # inside backend/
-npm run seed:admin -- you@example.com "your-password" "Your Name"
+npm run seed:admin -- you@example.com --name "Your Name"   # prompts for the password
 npm run dev                           # http://localhost:3001/api/health
 ```
 
@@ -35,7 +35,7 @@ site with no error message:
   CAPTCHA-specific message. A generic 400 shows the user nothing useful.
 - **Every response is `{ success, data | error }`.** The client checks
   `body.success` separately from the HTTP status.
-- **Sessions last 7 days**, mirrored as a constant in
+- **Sessions last 12 hours**, mirrored as a constant in
   `frontend/src/services/api/auth.ts`.
 
 `test/api.test.js` asserts all of the above against a real database. If you
@@ -46,28 +46,39 @@ change a field name, that suite is what tells you.
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | GET | `/api/health` | public | readiness probe |
-| POST | `/api/auth/login` | public | → `{ token, user }` |
-| POST | `/api/auth/register` | admin | no public signup exists |
+| POST | `/api/auth/login` | public | → `{ token, user }`, or `{ mfaRequired, mfaToken }` for two-factor accounts |
+| POST | `/api/auth/login/mfa` | public + challenge | `{ mfaToken, code }` → `{ token, user }`; code may be a recovery code |
+| POST | `/api/auth/forgot-password` | public | 5/hour per IP, 1/minute per email; answers before doing any work |
+| POST | `/api/auth/reset-password` | public | 5 guesses per code; no session for two-factor accounts |
+| GET | `/api/auth/me` | admin | |
+| PATCH | `/api/auth/users/:id/password` | admin (self) / Super Admin | own password needs `currentPassword` |
+| POST | `/api/auth/mfa/setup`, `/enable`, `/disable`, `/recovery-codes` | admin (self) | TOTP two-factor |
+| GET | `/api/auth/users` | Super Admin | |
+| POST | `/api/auth/register` | Super Admin | no public signup exists |
+| DELETE | `/api/auth/users/:id`, `/api/auth/users/:id/mfa` | Super Admin | remove an admin / reset their two-factor |
 | GET | `/api/products` | public | includes inactive ones — the dashboard needs them |
-| POST | `/api/products` | admin | upsert by app-supplied `id` |
-| DELETE | `/api/products/:id` | admin | |
+| POST | `/api/products` | Super Admin | upsert by app-supplied `id` |
+| DELETE | `/api/products/:id` | Super Admin | |
 | GET | `/api/inquiries` | admin | the lead list |
-| POST | `/api/inquiries` | public | CAPTCHA + honeypot + 5-min duplicate guard |
+| POST | `/api/inquiries` | public | CAPTCHA + honeypot + 5-min duplicate guard + format checks |
 | PATCH | `/api/inquiries/:id` | admin | status / notes |
 | DELETE | `/api/inquiries/:id` | admin | |
-| POST | `/api/upload-image` | admin | base64 JSON in, public URL out |
+| POST | `/api/upload-image` | Super Admin | base64 JSON in (up to 6 MB), public URL out |
+| GET | `/api/audit` | Super Admin | security event log |
+| POST | `/api/audit/lead-export` | admin | records a CSV export before the browser builds it |
 
 Admin routes expect `Authorization: Bearer <token>`.
 
 ## Degrading rather than breaking
 
-Only `JWT_SECRET` is mandatory; the server refuses to start without it. Every
+Only `JWT_SECRET` is mandatory; the server refuses to start without it, or
+with one shorter than 32 characters. Every
 other missing variable disables exactly one feature and says so at boot:
 
 | Unset | Effect |
 | --- | --- |
 | `MONGODB_URI` | `/api/products`, `/api/inquiries`, `/api/auth` answer **503**. The frontend falls back to its bundled demo data, so the site still browses. |
-| `BLOB_READ_WRITE_TOKEN` | Image uploads answer **503** with a message naming the variable. |
+| `CLOUDINARY_*` | Image uploads answer **503** with a message naming the variables. |
 | `TURNSTILE_SECRET_KEY` | **CAPTCHA is skipped** — the public enquiry form accepts unverified submissions. |
 | `RESEND_API_KEY` / `ADMIN_NOTIFICATION_EMAIL` | No notification email on a new enquiry. The lead is still saved. |
 
@@ -81,19 +92,29 @@ backend/
 │   ├── config.js             loads .env.local, exports settings, declares required env
 │   ├── db/
 │   │   ├── connect.js        idempotent connection + readiness state
-│   │   └── models/           Product, Inquiry, AdminUser, LoginAttempt
+│   │   └── models/           Product, Inquiry, AdminUser, LoginAttempt, PasswordReset,
+│   │                         RevokedToken, AuditLog, RateLimitHit
 │   ├── lib/
-│   │   ├── storage.js        Vercel Blob uploads
+│   │   ├── storage.js        Cloudinary uploads
 │   │   ├── turnstile.js      CAPTCHA verification
-│   │   └── email.js          Resend notifications
+│   │   ├── email.js          Resend notifications
+│   │   ├── totp.js           RFC 6238 two-factor codes (node:crypto only)
+│   │   ├── passwords.js      hashing, verification, legacy-hash upgrade
+│   │   ├── tokens.js         session and two-factor challenge tokens
+│   │   ├── revocation.js     logout revocation list (fails closed)
+│   │   ├── rateLimitStore.js MongoDB-backed limiter store shared by all instances
+│   │   └── audit.js          security event log
 │   ├── middleware/
 │   │   ├── requireAdmin.js   JWT guard
 │   │   ├── requireDatabase.js 503 when the database is not ready
-│   │   ├── rateLimit.js      login / enquiry / upload limits
+│   │   ├── rateLimit.js      login / forgot-password / enquiry / upload limits
+│   │   ├── sanitize.js       strips $-operator, dotted and prototype keys
 │   │   └── errors.js         404, validation → 400, error backstop
-│   └── routes/               auth, products, inquiries, upload
-├── scripts/seed-admin.js     creates the first admin
-└── test/api.test.js          end-to-end, against an in-memory MongoDB
+│   └── routes/               auth, mfa, products, inquiries, upload, audit
+├── scripts/seed-admin.js     creates the first Super Admin (password prompted)
+├── scripts/migrate-legacy-roles.js  renames the old 'admin' role
+└── test/                     end-to-end against an in-memory MongoDB;
+                              security.test.js covers every audit finding
 ```
 
 ## Security notes
@@ -109,9 +130,19 @@ backend/
   reaches the storage path — only its extension is consulted.
 - **Product writes are whitelisted.** Unknown keys are dropped rather than
   persisted, so `_id` and `createdAt` cannot be overwritten by a client.
-- **The enquiry form** is rate limited per IP, honeypotted, and de-duplicated
-  server-side. The client-side versions of those checks are bypassed by anyone
-  posting to the API directly.
+- **The enquiry form** is rate limited per IP, honeypotted, de-duplicated and
+  format-checked server-side. The client-side versions of those checks are
+  bypassed by anyone posting to the API directly.
+- **Two-factor authentication** (TOTP) is available to every admin, with
+  single-use recovery codes. A password reset never bypasses it.
+- **Request bodies are capped at 100 KB** except the admin image upload, and
+  string values are never run through regexes, so no request can stall the
+  event loop.
+- **Rate limits live in MongoDB**, so they hold across serverless instances
+  and restarts.
+- **Every security-relevant action is audited** (sign-ins, failures,
+  password and two-factor changes, admin changes, lead deletes and exports)
+  without storing passwords, codes or enquiry content.
 
 ## Tests
 

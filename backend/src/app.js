@@ -4,7 +4,16 @@ import helmet from 'helmet';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import { openapiSpec } from './docs/swagger.js';
-import { CORS_ORIGINS, JSON_BODY_LIMIT, NODE_ENV, IS_PROD, TRUST_PROXY_HOPS, API_DOCS_ENABLED } from './config.js';
+import querystring from 'node:querystring';
+import {
+  CORS_ORIGINS,
+  JSON_BODY_LIMIT,
+  UPLOAD_BODY_LIMIT,
+  NODE_ENV,
+  IS_PROD,
+  TRUST_PROXY_HOPS,
+  API_DOCS_ENABLED
+} from './config.js';
 import { isConfigured, isConnected } from './db/connect.js';
 import { isStorageConfigured } from './lib/storage.js';
 import { isTurnstileConfigured } from './lib/turnstile.js';
@@ -13,9 +22,10 @@ import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import inquiryRoutes from './routes/inquiries.js';
 import uploadRoutes from './routes/upload.js';
+import auditRoutes from './routes/audit.js';
 import { requireDatabase } from './middleware/requireDatabase.js';
 import { notFound, errorHandler } from './middleware/errors.js';
-import { sanitizeRequest } from './middleware/sanitize.js';
+import { sanitizeRequest, parseQuerySafely } from './middleware/sanitize.js';
 
 export function createApp() {
   const app = express();
@@ -23,11 +33,33 @@ export function createApp() {
   // req.ip must be the real client rather than the proxy - the login and
   // enquiry rate limits key off it. See TRUST_PROXY_HOPS in config.js.
   app.set('trust proxy', TRUST_PROXY_HOPS);
+  // helmet() below also removes it; disabling here covers responses sent
+  // before helmet runs.
   app.disable('x-powered-by');
+  // Flat parsing only (a[b]=c stays a literal key, never a nested object),
+  // with operator and prototype keys dropped at parse time.
+  app.set('query parser', (str) => parseQuerySafely(str, querystring.parse));
 
-  // contentSecurityPolicy is off because this process serves JSON only; the
-  // CSP that matters belongs on whatever serves the frontend HTML.
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  // API responses are JSON and must never be rendered as a page, so they get
+  // the strictest possible CSP. Swagger UI (development, or ENABLE_API_DOCS)
+  // is the one HTML page served here and gets just enough to render.
+  const apiHelmet = helmet({
+    contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  });
+  const docsHelmet = helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        frameAncestors: ["'none'"]
+      }
+    }
+  });
+  app.use((req, res, next) => (req.path.startsWith('/api/docs') ? docsHelmet : apiHelmet)(req, res, next));
 
   app.use(
     cors({
@@ -42,10 +74,12 @@ export function createApp() {
   );
 
   app.use(compression());
+  // The upload route's parser must run first: once a body is parsed, later
+  // express.json() calls skip it, so the small global limit never sees it.
+  app.use('/api/upload-image', express.json({ limit: UPLOAD_BODY_LIMIT }));
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
-  // Sanitize incoming body, query, and params against NoSQL injection,
-  // property traversal, prototype pollution, and stored script injection
+  // Strip NoSQL operator, dotted-path and prototype keys from JSON bodies.
   app.use(sanitizeRequest);
 
   if (!IS_PROD) {
@@ -81,14 +115,13 @@ export function createApp() {
     res.status(200).json(body);
   });
 
-  // Paths match exactly what the frontend already calls, so no frontend file
-  // changes. requireDatabase fronts the three routers that read or write the
-  // database; /api/upload-image only writes to object storage and reports its
-  // own configuration problems.
+  // requireDatabase fronts every router: all of them read or write the
+  // database, if only for authentication, rate-limit counters and audit logs.
   app.use('/api/auth', requireDatabase, authRoutes);
   app.use('/api/products', requireDatabase, productRoutes);
   app.use('/api/inquiries', requireDatabase, inquiryRoutes);
-  app.use('/api/upload-image', uploadRoutes);
+  app.use('/api/upload-image', requireDatabase, uploadRoutes);
+  app.use('/api/audit', requireDatabase, auditRoutes);
 
   if (API_DOCS_ENABLED) {
     // OpenAPI JSON Specification

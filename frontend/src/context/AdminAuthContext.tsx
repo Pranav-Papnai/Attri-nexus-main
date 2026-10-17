@@ -1,12 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { adminLogin, adminLogout, getStoredAdminUser, AdminSessionUser } from '@/services/api/auth';
+import {
+  adminLogin,
+  adminLogout,
+  completeMfaLogin,
+  getStoredAdminUser,
+  AdminSessionUser,
+  LoginResult
+} from '@/services/api/auth';
 
 interface AdminAuthContextType {
   isAuthenticated: boolean;
   adminUser: AdminSessionUser | null;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, pass: string) => Promise<LoginResult>;
+  verifyMfa: (mfaToken: string, code: string) => Promise<LoginResult>;
+  // Re-reads the stored session after something else wrote it (password
+  // reset, two-factor changes).
+  refreshSession: () => void;
   logout: () => void;
 }
 
@@ -17,29 +28,38 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [adminUser, setAdminUser] = useState<AdminSessionUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    // A synchronous localStorage read — no network round-trip needed just
-    // to restore a session on page load.
+  const refreshSession = useCallback(() => {
+    // A synchronous localStorage read — no network round-trip needed.
     const storedUser = getStoredAdminUser();
-    if (storedUser) {
-      setIsAuthenticated(true);
-      setAdminUser(storedUser);
-    }
-    setIsLoading(false);
+    setIsAuthenticated(Boolean(storedUser));
+    setAdminUser(storedUser);
   }, []);
 
-  const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+  useEffect(() => {
+    refreshSession();
+    setIsLoading(false);
+  }, [refreshSession]);
+
+  const finish = (result: LoginResult): LoginResult => {
+    if (result.success && result.user) {
+      setIsAuthenticated(true);
+      setAdminUser(result.user);
+    }
+    return result;
+  };
+
+  const login = async (email: string, pass: string): Promise<LoginResult> => {
     setIsLoading(true);
     const result = await adminLogin(email, pass);
     setIsLoading(false);
+    return finish(result);
+  };
 
-    if (!result.success || !result.user) {
-      return { success: false, error: result.error || 'Invalid credentials. Please enter correct Email and Password.' };
-    }
-
-    setIsAuthenticated(true);
-    setAdminUser(result.user);
-    return { success: true };
+  const verifyMfa = async (mfaToken: string, code: string): Promise<LoginResult> => {
+    setIsLoading(true);
+    const result = await completeMfaLogin(mfaToken, code);
+    setIsLoading(false);
+    return finish(result);
   };
 
   const logout = () => {
@@ -55,6 +75,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         adminUser,
         isLoading,
         login,
+        verifyMfa,
+        refreshSession,
         logout
       }}
     >

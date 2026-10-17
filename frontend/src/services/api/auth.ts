@@ -6,10 +6,10 @@ const SESSION_KEY = 'attri_nexus_admin_session';
 // key. Removed on load so those passwords do not linger in the browser.
 const LEGACY_LOCAL_ADMINS_KEY = 'attri_nexus_local_admins_v2';
 
-// Matches the server's token TTL (backend/src/config.js) — duplicated here only
-// because decoding the JWT client-side to read its real `exp` would need an
-// extra library for no real benefit at this scale.
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// Matches the server's token TTL (backend/src/config.js TOKEN_TTL) — duplicated
+// here only because decoding the JWT client-side to read its real `exp` would
+// need an extra library for no real benefit at this scale.
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 
 const UNREACHABLE = 'Could not reach the server. Please check your connection and try again.';
 
@@ -17,6 +17,7 @@ export interface AdminSessionUser {
   email: string;
   name: string;
   role: string;
+  mfaEnabled?: boolean;
 }
 
 export interface AdminUserRecord {
@@ -24,8 +25,28 @@ export interface AdminUserRecord {
   email: string;
   name: string;
   role: string;
+  mfaEnabled?: boolean;
   createdAt?: string;
 }
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  action: string;
+  actorEmail?: string;
+  targetType?: string;
+  targetId?: string;
+  ip?: string;
+  meta?: Record<string, unknown>;
+}
+
+export type LoginResult = {
+  success: boolean;
+  error?: string;
+  user?: AdminSessionUser;
+  mfaRequired?: boolean;
+  mfaToken?: string;
+};
 
 interface StoredSession {
   token: string;
@@ -88,10 +109,7 @@ async function readBody(res: Response): Promise<any> {
   return res.json().catch(() => ({}));
 }
 
-export async function adminLogin(
-  email: string,
-  password: string
-): Promise<{ success: boolean; error?: string; user?: AdminSessionUser }> {
+export async function adminLogin(email: string, password: string): Promise<LoginResult> {
   try {
     const res = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
@@ -100,12 +118,35 @@ export async function adminLogin(
     });
     const body = await readBody(res);
 
+    if (res.ok && body.success && body.mfaRequired && body.mfaToken) {
+      return { success: false, mfaRequired: true, mfaToken: body.mfaToken };
+    }
+
     if (res.ok && body.success && body.token && body.user) {
       writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
       return { success: true, user: body.user };
     }
 
     return { success: false, error: body.error || 'Invalid credentials. Please enter correct Email and Password.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+// Second step of a two-factor login: an authenticator code or a recovery code.
+export async function completeMfaLogin(mfaToken: string, code: string): Promise<LoginResult> {
+  try {
+    const res = await fetch(apiUrl('/api/auth/login/mfa'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken, code: code.trim() })
+    });
+    const body = await readBody(res);
+    if (res.ok && body.success && body.token && body.user) {
+      writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
+      return { success: true, user: body.user };
+    }
+    return { success: false, error: body.error || 'Invalid authentication code.' };
   } catch {
     return { success: false, error: UNREACHABLE };
   }
@@ -233,13 +274,14 @@ export async function deleteAdminUser(id: string): Promise<{ success: boolean; e
 
 export async function updateAdminPassword(
   id: string,
-  newPassword: string
+  newPassword: string,
+  currentPassword?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch(apiUrl(`/api/auth/users/${encodeURIComponent(id)}/password`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
-      body: JSON.stringify({ newPassword })
+      body: JSON.stringify({ newPassword, currentPassword })
     });
     const body = await readBody(res);
     if (res.ok && body.success) {
@@ -254,5 +296,109 @@ export async function updateAdminPassword(
     return { success: false, error: body.error || 'Could not update password.' };
   } catch {
     return { success: false, error: UNREACHABLE };
+  }
+}
+
+// Replaces the stored session after a change that ends other sessions
+// (enabling two-factor), keeping this browser signed in.
+function replaceSession(token: string | undefined, patch: Partial<AdminSessionUser>) {
+  const current = readSession();
+  if (current) {
+    writeSession({
+      token: token || current.token,
+      user: { ...current.user, ...patch },
+      expiresAt: token ? Date.now() + TOKEN_TTL_MS : current.expiresAt
+    });
+  }
+}
+
+async function authedJson(path: string, method: 'GET' | 'POST' | 'DELETE', payload?: unknown) {
+  const res = await fetch(apiUrl(path), {
+    method,
+    headers: { ...(payload ? { 'Content-Type': 'application/json' } : {}), ...getAdminAuthHeader() },
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  return { ok: res.ok, status: res.status, body: await readBody(res) };
+}
+
+export async function fetchCurrentAdmin(): Promise<{
+  success: boolean;
+  user?: AdminSessionUser & { id: string };
+  error?: string;
+}> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/me', 'GET');
+    return ok && body.user ? { success: true, user: body.user } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function startMfaSetup(): Promise<{ success: boolean; secret?: string; otpauthUrl?: string; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/setup', 'POST', {});
+    return ok ? { success: true, secret: body.secret, otpauthUrl: body.otpauthUrl } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function enableMfa(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/enable', 'POST', { code: code.trim() });
+    if (!ok) return { success: false, error: body.error || 'Could not turn on two-factor authentication.' };
+    replaceSession(body.token, { mfaEnabled: true });
+    return { success: true, recoveryCodes: body.recoveryCodes };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function disableMfa(password: string, code: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/disable', 'POST', { password, code: code.trim() });
+    if (!ok) return { success: false, error: body.error || 'Could not turn off two-factor authentication.' };
+    replaceSession(undefined, { mfaEnabled: false });
+    return { success: true };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function regenerateRecoveryCodes(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/recovery-codes', 'POST', { code: code.trim() });
+    return ok ? { success: true, recoveryCodes: body.recoveryCodes } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function resetAdminMfa(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { ok, body } = await authedJson(`/api/auth/users/${encodeURIComponent(id)}/mfa`, 'DELETE');
+    return ok ? { success: true } : { success: false, error: body.error || 'Could not reset two-factor authentication.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function fetchAuditLog(limit = 200): Promise<{ success: boolean; entries?: AuditEntry[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson(`/api/audit?limit=${limit}`, 'GET');
+    return ok && Array.isArray(body.data) ? { success: true, entries: body.data } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+// Lead CSVs are built in the browser, so each export is reported to the
+// audit log first. Exporting is refused when that fails, so the log stays complete.
+export async function recordLeadExport(count: number, range: string): Promise<boolean> {
+  try {
+    const { ok } = await authedJson('/api/audit/lead-export', 'POST', { count, range });
+    return ok;
+  } catch {
+    return false;
   }
 }

@@ -1,6 +1,10 @@
 node_modules
 .git
-.env.local
-.env
 npm-debug.log
 test
+# Never copy any environment file into an image (images are public).
+.env
+.env.*
+!.env.example
+*.pem
+*.key

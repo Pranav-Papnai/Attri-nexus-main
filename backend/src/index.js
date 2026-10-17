@@ -7,7 +7,7 @@ import { createApp } from './app.js';
 const { missingRequired, missingOptional } = checkEnv();
 
 if (missingRequired.length > 0) {
-  console.error('\nCannot start: required environment variables are missing.\n');
+  console.error('\nCannot start: required environment variables are missing or too weak.\n');
   for (const [key, why] of missingRequired) {
     console.error(`  ${key}  - ${why}`);
   }
@@ -24,6 +24,8 @@ for (const [key, why] of missingOptional) {
 // the frontend falls back to its local data, which is far more useful than a
 // server that refuses to start.
 if (isConfigured) {
+  // Server-side log only; nothing here reaches a client.
+  // nosemgrep: ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
   try {
     await connectDB();
     console.log('[db] connected');

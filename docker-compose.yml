@@ -4,7 +4,7 @@ services:
   # Set SITE_ADDRESS=yourdomain.com in .env for automatic HTTPS; see Caddyfile.
   # ==========================================
   caddy:
-    image: caddy:2.8-alpine
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     container_name: attri-nexus-caddy
     restart: always
     ports:
@@ -19,6 +19,8 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
+    mem_limit: 256m
+    cpus: 0.5
     networks:
       - attri-network
 
@@ -26,7 +28,9 @@ services:
   # Frontend Service (Vite React + Nginx)
   # ==========================================
   frontend:
-    image: akashiseijuro23/attri-frontend:v1
+    # CI deploys the exact commit it built (IMAGE_TAG=<git sha>); a local
+    # `docker compose up --build` builds and tags :local.
+    image: akashiseijuro23/attri-frontend:${IMAGE_TAG:-local}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -38,6 +42,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.5
     networks:
       - attri-network
 
@@ -45,7 +51,7 @@ services:
   # Backend API Service (Express + Node.js)
   # ==========================================
   backend:
-    image: akashiseijuro23/attri-backend:v1
+    image: akashiseijuro23/attri-backend:${IMAGE_TAG:-local}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -74,31 +80,45 @@ services:
     # X-Forwarded-For and dodge every per-IP rate limit and lockout.
     expose:
       - "3001"
+    # Forwards stop signals and reaps zombies (the image has no dumb-init).
+    init: true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 10s
+    mem_limit: 512m
+    cpus: 1.0
     networks:
       - attri-network
 
   # ==========================================
-  # Database Service (Local MongoDB fallback)
-  # (Can be skipped if using MongoDB Atlas cloud URI)
+  # Optional local MongoDB, for running without Atlas.
+  # Starts only when asked for:  docker compose --profile local-db up -d
   # ==========================================
   mongodb:
-    image: mongo:7.0
+    image: mongo:7.0@sha256:9650758f83af117fc96699f030a44f9300bed839734e67012f56df05b2fd6290
     container_name: attri-nexus-mongodb
     restart: always
-    # Enables authentication when both are set in .env. Only takes effect when
-    # the data volume is first created; MONGODB_URI must then carry them, e.g.
+    profiles: ["local-db"]
+    # Refuses to start without credentials, so the database can never run
+    # unauthenticated. MONGODB_URI must then carry them, e.g.
     # mongodb://USER:PASS@mongodb:27017/attri_nexus?authSource=admin
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-}
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        if [ -z "$$MONGO_INITDB_ROOT_USERNAME" ] || [ "$${#MONGO_INITDB_ROOT_PASSWORD}" -lt 16 ]; then
+        echo 'Set MONGO_ROOT_USERNAME and a MONGO_ROOT_PASSWORD of at least 16 characters in .env' >&2; exit 1; fi;
+        exec docker-entrypoint.sh mongod --auth
     volumes:
       - mongo_data:/data/db
+    mem_limit: 1g
+    cpus: 1.0
     networks:
       - attri-network
 

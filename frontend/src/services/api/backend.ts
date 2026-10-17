@@ -2,6 +2,7 @@ import { Product } from '@/types';
 import { PRODUCTS } from '@/constants/products';
 import { getAdminAuthHeader } from './auth';
 import { apiUrl } from './config';
+import { BUSINESS_CONFIG } from '@/constants/business';
 
 // Inquiry Interface
 export interface InquiryRecord {
@@ -23,8 +24,7 @@ export interface InquiryRecord {
   consent_version?: string;
 }
 
-// Local Storage Fallback Keys
-const LOCAL_INQUIRIES_KEY = 'attri_nexus_local_inquiries';
+// Local Storage Keys
 const LOCAL_PRODUCTS_KEY = 'attri_nexus_local_products_v17';
 const LOCAL_LAST_SUBMIT_KEY = 'attri_nexus_last_submit_ts';
 
@@ -38,6 +38,27 @@ const MIN_SUBMIT_INTERVAL_MS = 20000;
 // check alone is trivially bypassed by anyone calling the API directly.
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 const LOCAL_LAST_SUBMIT_BY_KEY = 'attri_nexus_recent_submits';
+
+// Older builds kept a copy of every visitor's enquiry (name, phone, message)
+// in their own browser when the API was unreachable. Nothing reads it any
+// more, so remove it rather than leave personal data lying around.
+try {
+  localStorage.removeItem('attri_nexus_local_inquiries');
+} catch {}
+
+const SEND_FAILED_MESSAGE =
+  `We couldn't send your enquiry right now. Please try again in a minute, or call us on ${BUSINESS_CONFIG.phonePrimary} or message us on WhatsApp.`;
+
+// Lets the visitor retry immediately after a failed send instead of hitting
+// the client-side throttle meant for successful submissions.
+function forgetSubmitAttempt(phone: string) {
+  try {
+    localStorage.removeItem(LOCAL_LAST_SUBMIT_KEY);
+    const recent = JSON.parse(localStorage.getItem(LOCAL_LAST_SUBMIT_BY_KEY) || '{}');
+    delete recent[`dup_${phone}`];
+    localStorage.setItem(LOCAL_LAST_SUBMIT_BY_KEY, JSON.stringify(recent));
+  } catch {}
+}
 
 // -------------------------------------------------------------
 // INQUIRIES / LEADS API
@@ -87,7 +108,7 @@ export const saveInquiry = async (
 
   const newRecord: InquiryRecord = {
     ...inquiry,
-    id: `inq_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    id: `inq_${crypto.randomUUID()}`,
     status: 'new',
     created_at: new Date().toISOString()
   };
@@ -107,47 +128,32 @@ export const saveInquiry = async (
       };
     }
 
-    if (res.status === 400) {
-      const body = await res.json().catch(() => ({}));
-      if (body.error && body.error.toLowerCase().includes('captcha')) {
-        return { success: false, error: body.error };
-      }
-    }
-
     if (!res.ok) {
-      console.warn('Inquiry API failed, saving to local store');
-      saveLocalInquiry(newRecord);
-      return { success: true, data: newRecord };
+      const body = await res.json().catch(() => ({}));
+      forgetSubmitAttempt(inquiry.phone);
+      // 400s and 429s carry a message written for the visitor (invalid phone,
+      // captcha, consent, slow down); anything else is our fault, so offer
+      // other ways to reach us.
+      const visitorFacing = (res.status === 400 || res.status === 429) && body.error;
+      return { success: false, error: visitorFacing ? body.error : SEND_FAILED_MESSAGE };
     }
 
     return { success: true, data: newRecord };
   } catch (err) {
     console.error('Error saving inquiry:', err);
-    saveLocalInquiry(newRecord);
-    return { success: true, data: newRecord };
+    forgetSubmitAttempt(inquiry.phone);
+    return { success: false, error: SEND_FAILED_MESSAGE };
   }
 };
 
 export const getInquiries = async (): Promise<InquiryRecord[]> => {
-  try {
-    const res = await fetch(apiUrl('/api/inquiries'), { headers: getAdminAuthHeader() });
-
-    // A successful query with zero rows (fresh account, or every lead
-    // deleted) is real data, not a failure — it must be returned as-is
-    // instead of falling through to the local demo-seed fallback below,
-    // which would otherwise show fake sample leads as if they were real.
-    if (res.ok) {
-      const body = await res.json();
-      if (body.success && body.data) {
-        return body.data as InquiryRecord[];
-      }
-    }
-  } catch (err) {
-    console.warn('Could not fetch from backend, loading local fallback:', err);
+  const res = await fetch(apiUrl('/api/inquiries'), { headers: getAdminAuthHeader() });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.success || !Array.isArray(body.data)) {
+    throw new Error(body.error || `Could not load enquiries (HTTP ${res.status})`);
   }
-
-  // Fallback to local inquiries
-  return getLocalInquiries();
+  // Zero rows is real data (a fresh account, or every lead deleted).
+  return body.data as InquiryRecord[];
 };
 
 export const updateInquiryStatus = async (
@@ -156,37 +162,29 @@ export const updateInquiryStatus = async (
   notes?: string
 ): Promise<boolean> => {
   try {
-    const res = await fetch(apiUrl(`/api/inquiries/${id}`), {
+    const res = await fetch(apiUrl(`/api/inquiries/${encodeURIComponent(id)}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
       body: JSON.stringify({ status, notes })
     });
-    if (res.ok) return true;
+    return res.ok;
   } catch (err) {
     console.warn('Inquiry update failed:', err);
+    return false;
   }
-
-  // Fallback update
-  const localList = getLocalInquiries();
-  const updated = localList.map((item) =>
-    item.id === id ? { ...item, status, notes: notes ?? item.notes } : item
-  );
-  localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(updated));
-  return true;
 };
 
 export const deleteInquiry = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(apiUrl(`/api/inquiries/${id}`), { method: 'DELETE', headers: getAdminAuthHeader() });
-    if (res.ok) return true;
+    const res = await fetch(apiUrl(`/api/inquiries/${encodeURIComponent(id)}`), {
+      method: 'DELETE',
+      headers: getAdminAuthHeader()
+    });
+    return res.ok;
   } catch (err) {
     console.warn('Inquiry delete failed:', err);
+    return false;
   }
-
-  const localList = getLocalInquiries();
-  const filtered = localList.filter((item) => item.id !== id);
-  localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(filtered));
-  return true;
 };
 
 // -------------------------------------------------------------
@@ -342,84 +340,28 @@ export const upsertProductInDb = async (product: Product): Promise<{ success: bo
     console.error('Product upsert failed:', body.error);
     return { success: false, error: body.error || 'Save failed' };
   } catch (err) {
-    // Genuine network failure (e.g. offline) — fall back to local-only save
-    // so the admin UI doesn't hard-fail while completely disconnected.
-    console.warn('Could not reach backend, saving locally:', err);
-    saveLocalProduct(product);
-    return { success: true };
+    console.warn('Could not reach backend:', err);
+    return { success: false, error: 'Could not reach the server. Nothing was saved.' };
   }
 };
 
 export const deleteProductFromDb = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(apiUrl(`/api/products/${id}`), { method: 'DELETE', headers: getAdminAuthHeader() });
-    if (res.ok) {
-      removeLocalProduct(id);
-      return true;
-    }
+    const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(id)}`), {
+      method: 'DELETE',
+      headers: getAdminAuthHeader()
+    });
+    if (res.ok) removeLocalProduct(id);
+    return res.ok;
   } catch (err) {
     console.warn('Product delete failed:', err);
+    return false;
   }
-
-  removeLocalProduct(id);
-  return true;
 };
 
 // -------------------------------------------------------------
 // LOCAL STORAGE HELPERS
 // -------------------------------------------------------------
-
-function getLocalInquiries(): InquiryRecord[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_INQUIRIES_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-
-  // Sample data shown only when the backend itself is unreachable (network/config
-  // failure) — genuinely empty results are now returned as-is by getInquiries()
-  // and never reach this point. Clearly labeled so it can never be mistaken
-  // for a real customer lead if it does surface during an outage.
-  const initialSeed: InquiryRecord[] = [
-    {
-      id: 'inq_demo_1',
-      name: '[SAMPLE - NOT A REAL LEAD] Rajesh Sharma',
-      email: 'rajesh.sharma@tajhotels-delhi.com',
-      phone: '+91 98112 34567',
-      company_name: 'Taj Palace Hospitality Group',
-      product_id: 'Attri Traditional',
-      quantity: '5 MT (Metric Tons) Monthly',
-      message: '[This is placeholder sample data shown because the live database could not be reached.] Looking for annual contract for 100% aged royal basmati rice for banquet catering in Delhi NCR.',
-      source: 'bulk',
-      status: 'new',
-      consent: true,
-      created_at: new Date(Date.now() - 3600000 * 2).toISOString()
-    },
-    {
-      id: 'inq_demo_2',
-      name: '[SAMPLE - NOT A REAL LEAD] Pooja Agarwal',
-      email: 'pooja.agarwal@gmail.com',
-      phone: '+91 98765 43210',
-      company_name: 'Agarwal Supermart Chain',
-      product_id: 'Attri Sona',
-      quantity: '500 Bags (25kg each)',
-      message: '[This is placeholder sample data shown because the live database could not be reached.] Need retail distribution quotation for Attri Sona Masoori in Lucknow & Kanpur outlets.',
-      source: 'contact',
-      status: 'contacted',
-      notes: 'Sent brochure on WhatsApp. Follow-up scheduled for tomorrow.',
-      consent: true,
-      created_at: new Date(Date.now() - 3600000 * 24).toISOString()
-    }
-  ];
-
-  localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(initialSeed));
-  return initialSeed;
-}
-
-function saveLocalInquiry(record: InquiryRecord) {
-  const current = getLocalInquiries();
-  const updated = [record, ...current.filter((i) => i.id !== record.id)];
-  localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(updated));
-}
 
 function getLocalProducts(): Product[] {
   try {

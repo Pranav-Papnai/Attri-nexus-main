@@ -19,8 +19,13 @@ import {
   createAdminUser,
   deleteAdminUser,
   updateAdminPassword,
+  resetAdminMfa,
+  recordLeadExport,
   AdminUserRecord
 } from '@/services/api/auth';
+import { SecurityPanel } from '../../components/admin/SecurityPanel';
+import { AuditLogPanel } from '../../components/admin/AuditLogPanel';
+import { downloadCsv } from '../../utils/csv';
 import {
   ExecutiveDonutChart,
   ExecutiveTrendChart,
@@ -105,7 +110,8 @@ const PACK_SIZE_PRESETS = [
 ];
 
 export const AdminDashboardPage: React.FC = () => {
-  const { logout, adminUser } = useAdminAuth();
+  const { logout, adminUser, refreshSession } = useAdminAuth();
+  const isSuperAdmin = adminUser?.role === 'Super Admin';
   const navigate = useNavigate();
 
   // First letter of the logged-in admin email (or name)
@@ -169,6 +175,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [changingPasswordUser, setChangingPasswordUser] = useState<AdminUserRecord | null>(null);
   const [newPasswordInput, setNewPasswordInput] = useState<string>('');
   const [showChangePasswordInput, setShowChangePasswordInput] = useState<boolean>(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState<string>('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState<boolean>(false);
 
   // Deletes are not committed immediately — the row is hidden right away and
@@ -244,6 +251,7 @@ export const AdminDashboardPage: React.FC = () => {
       setProducts(prodData);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
+      showToast('Could not load enquiries from the server. Check your connection and refresh.');
     } finally {
       if (!silent) setIsRefreshing(false);
     }
@@ -656,7 +664,10 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Handlers
   const handleStatusChange = async (id: string, newStatus: InquiryRecord['status']) => {
-    await updateInquiryStatus(id, newStatus);
+    if (!(await updateInquiryStatus(id, newStatus))) {
+      alert('Could not update the status on the server. Nothing was changed.');
+      return;
+    }
     setInquiries((prev) =>
       prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
     );
@@ -678,8 +689,11 @@ export const AdminDashboardPage: React.FC = () => {
     }
 
     const timer = setTimeout(async () => {
-      if (type === 'inquiry') await deleteInquiry(id);
-      else await deleteProductFromDb(id);
+      const deleted = type === 'inquiry' ? await deleteInquiry(id) : await deleteProductFromDb(id);
+      if (!deleted) {
+        showToast(`Could not delete "${label}" on the server. It has been restored.`);
+        loadDashboardData(true);
+      }
       delete pendingDeleteTimers.current[id];
       setPendingDeletes((prev) => {
         const next = { ...prev };
@@ -746,7 +760,8 @@ export const AdminDashboardPage: React.FC = () => {
           id: 'master-admin',
           email: adminUser?.email || 'admin@attrinexus.com',
           name: adminUser?.name || 'Master Administrator',
-          role: adminUser?.role || 'Super Admin',
+          role: adminUser?.role || 'Commercial Admin',
+          mfaEnabled: adminUser?.mfaEnabled,
           createdAt: new Date().toISOString()
         }
       ]);
@@ -816,6 +831,19 @@ export const AdminDashboardPage: React.FC = () => {
     showToast(`Revoked admin access for ${user.email}`);
   };
 
+  const handleResetMfa = async (user: AdminUserRecord) => {
+    if (!window.confirm(`Turn off two-factor authentication for ${user.email}? They will be signed out and can sign in with just their password until they set it up again.`)) {
+      return;
+    }
+    const res = await resetAdminMfa(user.id);
+    if (!res.success) {
+      alert(res.error || 'Could not reset two-factor authentication.');
+      return;
+    }
+    showToast(`Two-factor turned off for ${user.email}`);
+    loadAdminUsers();
+  };
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!changingPasswordUser) return;
@@ -824,8 +852,18 @@ export const AdminDashboardPage: React.FC = () => {
       return;
     }
 
+    const isOwnAccount = changingPasswordUser.email === adminUser?.email;
+    if (isOwnAccount && !currentPasswordInput) {
+      alert('Enter your current password.');
+      return;
+    }
+
     setIsUpdatingPassword(true);
-    const res = await updateAdminPassword(changingPasswordUser.id, newPasswordInput);
+    const res = await updateAdminPassword(
+      changingPasswordUser.id,
+      newPasswordInput,
+      isOwnAccount ? currentPasswordInput : undefined
+    );
     setIsUpdatingPassword(false);
 
     if (!res.success) {
@@ -837,6 +875,7 @@ export const AdminDashboardPage: React.FC = () => {
     setIsChangePasswordModalOpen(false);
     setChangingPasswordUser(null);
     setNewPasswordInput('');
+    setCurrentPasswordInput('');
   };
 
   // Preset Date Selection Handler for Export
@@ -866,41 +905,12 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   // Execute CSV Download
-  const handleDownloadFilteredCSV = () => {
+  const handleDownloadFilteredCSV = async () => {
     if (exportTargetInquiries.length === 0) {
       alert('No customer inquiries found for the selected date range and filters.');
       return;
     }
 
-    // Guard against CSV/formula injection: a lead can submit a name or message
-    // starting with =, +, -, @, or a tab/CR that Excel/Sheets would otherwise
-    // interpret as a formula when the exported file is opened. Prefixing with
-    // a single quote forces those spreadsheet apps to treat the cell as text.
-    const csvSafe = (value: string) => {
-      const str = String(value ?? '');
-      return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
-    };
-
-    const headers = ['ID', 'Date', 'Name', 'Phone', 'Email', 'Company / City', 'Category', 'Product', 'Quantity', 'Status', 'Source', 'Message'];
-    const rows = exportTargetInquiries.map((i) => [
-      `"${csvSafe(i.id)}"`,
-      `"${csvSafe(new Date(i.created_at).toLocaleString())}"`,
-      `"${csvSafe(i.name).replace(/"/g, '""')}"`,
-      `"${csvSafe(i.phone)}"`,
-      `"${csvSafe(i.email || '')}"`,
-      `"${csvSafe(i.company_name || '').replace(/"/g, '""')}"`,
-      `"${csvSafe(getInquiryCategory(i))}"`,
-      `"${csvSafe(i.product_id || '').replace(/"/g, '""')}"`,
-      `"${csvSafe(i.quantity || '').replace(/"/g, '""')}"`,
-      `"${i.status}"`,
-      `"${i.source}"`,
-      `"${csvSafe(i.message).replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    
     let fileSuffix: string = exportPreset;
     if (exportPreset === 'custom' || exportPreset === '1month' || exportPreset === '7days' || exportPreset === '1year') {
       fileSuffix = `${exportStartDate || 'start'}_to_${exportEndDate || 'today'}`;
@@ -912,22 +922,36 @@ export const AdminDashboardPage: React.FC = () => {
       fileSuffix += `_${exportProductFilter.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)}`;
     }
 
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `attri_nexus_leads_${fileSuffix}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Exporting customer data is recorded in the security log; if that
+    // cannot be recorded, the export does not happen.
+    if (!(await recordLeadExport(exportTargetInquiries.length, fileSuffix))) {
+      alert('Could not record this export in the security log, so it was not downloaded. Please try again.');
+      return;
+    }
+
+    const headers = ['ID', 'Date', 'Name', 'Phone', 'Email', 'Company / City', 'Category', 'Product', 'Quantity', 'Status', 'Source', 'Message'];
+    const rows = exportTargetInquiries.map((i) => [
+      i.id,
+      new Date(i.created_at).toLocaleString(),
+      i.name,
+      i.phone,
+      i.email || '',
+      i.company_name || '',
+      getInquiryCategory(i),
+      i.product_id || '',
+      i.quantity || '',
+      i.status,
+      i.source,
+      i.message
+    ]);
+
+    downloadCsv(`attri_nexus_leads_${fileSuffix}.csv`, headers, rows);
 
     showToast(`Exported ${exportTargetInquiries.length} leads to CSV!`);
   };
 
   // Download Products Catalog CSV
   const handleDownloadProductsCSV = () => {
-    const csvSafe = (value: string) => {
-      const str = String(value ?? '');
-      return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
-    };
-
     const targetProds = exportCategoryFilter === 'all'
       ? products
       : products.filter((p) => normalizeCategory(p.category) === exportCategoryFilter);
@@ -939,26 +963,19 @@ export const AdminDashboardPage: React.FC = () => {
 
     const headers = ['ID', 'Name', 'Category', 'Commercial Category', 'Variety', 'Brand Line', 'Active Status', 'Pack Sizes', 'Short Description'];
     const rows = targetProds.map((p) => [
-      `"${csvSafe(p.id)}"`,
-      `"${csvSafe(p.name).replace(/"/g, '""')}"`,
-      `"${csvSafe(p.category || '').replace(/"/g, '""')}"`,
-      `"${normalizeCategory(p.category)}"`,
-      `"${csvSafe(p.variety || '').replace(/"/g, '""')}"`,
-      `"${csvSafe(p.brandLine || '').replace(/"/g, '""')}"`,
-      `"${p.isActive !== false ? 'Active' : 'Inactive'}"`,
-      `"${csvSafe((p.packSizes || []).join(', '))}"`,
-      `"${csvSafe(p.shortDescription || '').replace(/"/g, '""')}"`
+      p.id,
+      p.name,
+      p.category || '',
+      normalizeCategory(p.category),
+      p.variety || '',
+      p.brandLine || '',
+      p.isActive !== false ? 'Active' : 'Inactive',
+      (p.packSizes || []).join(', '),
+      p.shortDescription || ''
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
     const catSuffix = exportCategoryFilter === 'all' ? 'all_products' : exportCategoryFilter.toLowerCase().replace(/\s+/g, '_');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `attri_nexus_products_${catSuffix}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsv(`attri_nexus_products_${catSuffix}.csv`, headers, rows);
 
     showToast(`Exported ${targetProds.length} products to CSV!`);
   };
@@ -2415,6 +2432,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </p>
               </div>
 
+              {isSuperAdmin && (
               <button
                 onClick={() => {
                   setNewAdminForm({
@@ -2433,6 +2451,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <UserPlus className="w-4 h-4 text-[#C5A059]" />
                 <span>Create New Admin</span>
               </button>
+              )}
             </div>
 
             {/* 3 Metric Cards */}
@@ -2457,7 +2476,7 @@ export const AdminDashboardPage: React.FC = () => {
                   {adminUser?.email || 'admin@attrinexus.com'}
                 </div>
                 <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-                  🟢 Active Session ({adminUser?.role || 'Super Admin'})
+                  🟢 Active Session ({adminUser?.role || 'Admin'})
                 </p>
               </div>
 
@@ -2467,9 +2486,9 @@ export const AdminDashboardPage: React.FC = () => {
                   <Lock className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-sm font-bold text-[#0D3B2E] dark:text-white mt-2">
-                  BCrypt (12 Rounds) + JWT
+                  BCrypt (12 Rounds) + 2FA
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">Encrypted password hashes with 7-day tokens</p>
+                <p className="text-[10px] text-gray-400 mt-1">Hashed passwords, optional authenticator codes, 12-hour sessions</p>
               </div>
             </div>
 
@@ -2508,7 +2527,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <th className="px-4 py-3.5">Admin Name & Login ID</th>
                       <th className="px-4 py-3.5">Role</th>
                       <th className="px-4 py-3.5">Created Date</th>
-                      <th className="px-4 py-3.5">Account Status</th>
+                      <th className="px-4 py-3.5">Two-Factor</th>
                       <th className="px-4 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -2554,10 +2573,17 @@ export const AdminDashboardPage: React.FC = () => {
                           </td>
 
                           <td className="px-4 py-3.5">
-                            <span className="inline-flex items-center space-x-1.5 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>Active & Verified</span>
-                            </span>
+                            {user.mfaEnabled ? (
+                              <span className="inline-flex items-center space-x-1.5 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>On</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center space-x-1.5 text-amber-600 dark:text-amber-400 text-[11px] font-semibold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                <span>Off</span>
+                              </span>
+                            )}
                           </td>
 
                           <td className="px-4 py-3.5 text-right">
@@ -2567,6 +2593,7 @@ export const AdminDashboardPage: React.FC = () => {
                                 onClick={() => {
                                   setChangingPasswordUser(user);
                                   setNewPasswordInput('');
+                                  setCurrentPasswordInput('');
                                   setShowChangePasswordInput(false);
                                   setIsChangePasswordModalOpen(true);
                                 }}
@@ -2578,7 +2605,18 @@ export const AdminDashboardPage: React.FC = () => {
                                 <KeyRound className="w-3.5 h-3.5" />
                               </button>
 
-                              {!isCurrent && (
+                              {!isCurrent && isSuperAdmin && user.mfaEnabled && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMfa(user)}
+                                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 border border-amber-500/30 cursor-pointer"
+                                  title="Turn off two-factor for this admin (lost phone)"
+                                >
+                                  Reset 2FA
+                                </button>
+                              )}
+
+                              {!isCurrent && isSuperAdmin && (
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteAdmin(user)}
@@ -2597,6 +2635,10 @@ export const AdminDashboardPage: React.FC = () => {
                 </table>
               </div>
             </div>
+
+            <SecurityPanel isDark={isDark} onSessionChanged={() => { refreshSession(); loadAdminUsers(); }} />
+
+            {isSuperAdmin && <AuditLogPanel isDark={isDark} />}
 
           </div>
         )}
@@ -3240,6 +3282,23 @@ export const AdminDashboardPage: React.FC = () => {
             </p>
 
             <form onSubmit={handleUpdatePassword} className="space-y-4 pt-4">
+              {changingPasswordUser.email === adminUser?.email && (
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-[#64748B]'}`}>
+                    Current Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    value={currentPasswordInput}
+                    onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs border font-mono focus:outline-none focus:ring-2 focus:ring-[#8A6828] ${
+                      isDark ? 'bg-[#0B0F15] border-white/15 text-white' : 'bg-white border-[#D6CEC0] text-[#1E232B]'
+                    }`}
+                  />
+                </div>
+              )}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className={`block text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-[#64748B]'}`}>
@@ -3249,11 +3308,11 @@ export const AdminDashboardPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
-                      let pwd = 'Attri';
-                      for (let i = 0; i < 7; i++) {
-                        pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+                      const bytes = crypto.getRandomValues(new Uint32Array(16));
+                      let pwd = '';
+                      for (const b of bytes) {
+                        pwd += chars.charAt(b % chars.length);
                       }
-                      pwd += '!26';
                       setNewPasswordInput(pwd);
                       setShowChangePasswordInput(true);
                     }}

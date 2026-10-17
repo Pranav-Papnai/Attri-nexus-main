@@ -12,20 +12,27 @@ import {
   KeyRound,
   CheckCircle2,
   RefreshCw,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import { requestPasswordReset, verifyAndResetPassword } from '@/services/api/auth';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, logout, isAuthenticated } = useAdminAuth();
+  const { login, verifyMfa, refreshSession, logout, isAuthenticated } = useAdminAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Two-factor step: set once the password is accepted for an account that
+  // has an authenticator app.
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -57,14 +64,37 @@ export const AdminLoginPage: React.FC = () => {
     setErrorMsg(null);
     setIsLoading(true);
 
+    setInfoMsg(null);
     const res = await login(email, password);
 
     if (res.success) {
       navigate(from, { replace: true });
+    } else if (res.mfaRequired && res.mfaToken) {
+      setMfaToken(res.mfaToken);
+      setMfaCode('');
+      setPassword('');
     } else {
       setErrorMsg(res.error || 'Authentication failed. Please check credentials.');
     }
     setIsLoading(false);
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setErrorMsg(null);
+    setIsLoading(true);
+    const res = await verifyMfa(mfaToken, mfaCode);
+    setIsLoading(false);
+
+    if (res.success) {
+      navigate(from, { replace: true });
+      return;
+    }
+    setMfaCode('');
+    setErrorMsg(res.error || 'Invalid authentication code.');
+    // An expired challenge means starting again from the password.
+    if (res.error && /expired/i.test(res.error)) setMfaToken(null);
   };
 
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -100,12 +130,18 @@ export const AdminLoginPage: React.FC = () => {
     const res = await verifyAndResetPassword(forgotEmail, resetOtp, newPassword);
     setForgotLoading(false);
 
-    if (res.success) {
+    if (res.success && res.user) {
+      refreshSession();
       setForgotStep(3);
       // Auto-redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate('/admin/dashboard', { replace: true });
       }, 2000);
+    } else if (res.success) {
+      // Accounts with two-factor still have to sign in through both steps.
+      closeForgotModal();
+      setEmail(forgotEmail);
+      setInfoMsg(res.message || 'Password reset. Please sign in with your new password and authentication code.');
     } else {
       setForgotError(res.error || 'Failed to reset password. Please check your reset code.');
     }
@@ -171,6 +207,52 @@ export const AdminLoginPage: React.FC = () => {
             </div>
           )}
 
+          {infoMsg && !errorMsg && (
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start space-x-3 text-emerald-300 text-xs">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{infoMsg}</span>
+            </div>
+          )}
+
+          {mfaToken ? (
+            <form onSubmit={handleMfaSubmit} className="space-y-4">
+              <div className="flex items-center space-x-3 text-[#DFD1BA]">
+                <ShieldCheck className="w-5 h-5 text-[#C5A059]" />
+                <span className="text-sm font-semibold">Two-factor authentication</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Enter the 6-digit code from your authenticator app, or one of your recovery codes.
+              </p>
+              <input
+                type="text"
+                inputMode="text"
+                autoComplete="one-time-code"
+                autoFocus
+                required
+                maxLength={11}
+                placeholder="123456"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                className="w-full px-4 py-3 bg-[#0C1015] border border-white/15 rounded-xl text-center text-lg tracking-[0.4em] font-mono text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#C5A059] focus:border-transparent transition-all"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || mfaCode.trim().length < 6}
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#DFD1BA] via-[#C5A059] to-[#997530] text-white font-bold text-xs uppercase tracking-widest shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isLoading ? 'Verifying...' : 'Verify & Sign In'}
+              </button>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setMfaToken(null); setMfaCode(''); setErrorMsg(null); }}
+                  className="text-xs text-[#C5A059] hover:text-[#DFD1BA] transition-colors font-medium hover:underline cursor-pointer py-1"
+                >
+                  ← Use a different account
+                </button>
+              </div>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div>
@@ -242,6 +324,7 @@ export const AdminLoginPage: React.FC = () => {
               </button>
             </div>
           </form>
+          )}
 
         </div>
 

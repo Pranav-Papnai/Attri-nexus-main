@@ -120,7 +120,7 @@ describe('auth', () => {
     assert.equal(status, 200);
     assert.equal(body.success, true);
     assert.ok(body.token, 'a token is returned');
-    assert.deepEqual(Object.keys(body.user).sort(), ['email', 'name', 'role']);
+    assert.deepEqual(Object.keys(body.user).sort(), ['email', 'mfaEnabled', 'name', 'role']);
     assert.equal(body.user.email, ADMIN_EMAIL);
     adminToken = body.token;
   });
@@ -203,10 +203,15 @@ describe('auth', () => {
   });
 
   // The real code only ever leaves the server by email, so tests overwrite the
-  // stored hash with one for a code they know.
+  // stored hash with one for a code they know. forgot-password creates the
+  // code after it has responded, so wait for it to exist first.
   const plantResetCode = async (email, otp) => {
     const crypto = await import('node:crypto');
     const { PasswordReset } = await import('../src/db/models/PasswordReset.js');
+    for (let i = 0; i < 100 && !(await PasswordReset.exists({ email })); i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.ok(await PasswordReset.exists({ email }), 'a reset code was created');
     await PasswordReset.updateOne(
       { email },
       { $set: { otpHash: crypto.createHash('sha256').update(otp).digest('hex'), attempts: 0 } }
@@ -307,6 +312,12 @@ describe('auth', () => {
 
 describe('roles and sessions', () => {
   const COMMERCIAL_EMAIL = 'second@attri.test';
+  // Counters are shared through MongoDB; earlier groups' deliberate failures
+  // would otherwise spill into this group's per-IP allowance.
+  before(async () => {
+    const { RateLimitHit } = await import('../src/db/models/RateLimitHit.js');
+    await RateLimitHit.deleteMany({});
+  });
   let commercialPassword = 'another-good-password';
   let commercialToken;
   let commercialId;
@@ -365,13 +376,28 @@ describe('roles and sessions', () => {
     assert.ok(!(await AdminUser.exists({ email: 'sneaky@attri.test' })));
   });
 
+  test('changing your own password requires the current password', async () => {
+    for (const body of [{ newPassword: 'whatever-new-1' }, { newPassword: 'whatever-new-1', currentPassword: 'not-it-at-all' }]) {
+      const res = await api(`/api/auth/users/${commercialId}/password`, {
+        method: 'PATCH',
+        headers: asAdmin(commercialToken),
+        body: JSON.stringify(body)
+      });
+      assert.equal(res.status, 400);
+      assert.match(res.body.error, /current password/i);
+    }
+    // The session survives a failed attempt.
+    assert.equal((await api('/api/auth/me', { headers: asAdmin(commercialToken) })).status, 200);
+  });
+
   test('changing your own password returns a fresh token and ends the old session', async () => {
     await nextSecond();
+    const previousPassword = commercialPassword;
     commercialPassword = 'commercial-new-pass-1';
     const res = await api(`/api/auth/users/${commercialId}/password`, {
       method: 'PATCH',
       headers: asAdmin(commercialToken),
-      body: JSON.stringify({ newPassword: commercialPassword })
+      body: JSON.stringify({ newPassword: commercialPassword, currentPassword: previousPassword })
     });
     assert.equal(res.status, 200);
     assert.ok(res.body.token);

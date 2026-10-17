@@ -11,7 +11,8 @@
     "seed:admin": "node scripts/seed-admin.js",
     "seed:products": "node scripts/seed-products.js",
     "deploy:lambda": "serverless deploy",
-    "test": "node --test --test-timeout=120000 test/*.test.js"
+    "test": "node --test --test-timeout=120000 test/*.test.js",
+    "migrate:roles": "node scripts/migrate-legacy-roles.js"
   },
   "license": "ISC",
   "dependencies": {
@@ -30,5 +31,11 @@
   },
   "devDependencies": {
     "mongodb-memory-server": "^11.2.0"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }

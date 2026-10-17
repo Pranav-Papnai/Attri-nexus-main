@@ -38,7 +38,8 @@ before(async () => {
   const admin = await AdminUser.create({
     email: ADMIN_EMAIL,
     passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
-    name: 'Verification Admin'
+    name: 'Verification Admin',
+    role: 'Super Admin'
   });
 
   const jwt = (await import('jsonwebtoken')).default;
