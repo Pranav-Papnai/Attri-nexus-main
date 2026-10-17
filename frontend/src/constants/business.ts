@@ -13,24 +13,24 @@ export const BUSINESS_CONFIG: BusinessConfig = {
   
   // Direct packaging numbers from official bag prints
   phonePrimary: "+91 9654922815",
-  phoneSecondary: "+91 5884922015",
-  
+  phoneSecondary: "+91 9654922815",
+
   // WhatsApp Configuration (Digits only with country code for api.whatsapp.com)
   whatsappNumber: "+919654922815",
   whatsappDefaultMessage: "Hello Attri Nexus, I would like to enquire about your agro commodities (Rice, Animal Feed, Wheat & Flour, Beans & Pulses).",
 
   // Business Emails
-  email: "akashiseijuro1b@gmail.com",
-  salesEmail: "akashiseijuro1b@gmail.com",
+  email: "attrinexus@gmail.com",
+  salesEmail: "attrinexus@gmail.com",
 
   // Business Address
   address: {
     line1: "Attri Nexus Corporate Office",
-    area: "Agro Commerce Zone",
-    city: "New Delhi / NCR",
-    state: "Delhi",
+    area: "Plot No-1066, Shakti Khand-4, Indirapuram, Shipra Suncity",
+    city: "Ghaziabad",
+    state: "Uttar Pradesh",
     country: "India",
-    pincode: "110001"
+    pincode: "201014"
   },
 
   // Operational Hours
