@@ -15,8 +15,8 @@ export const INQUIRY_RETENTION_MONTHS = 24;
  * placeholder name with the real officer and use a business-domain mailbox.
  */
 export const GRIEVANCE_OFFICER = {
-  name: '[Grievance Officer name – to be confirmed]',
-  email: 'akashiseijuro1b@gmail.com'
+  name: 'Pranav Papnai',
+  email: 'pranavpapnai23@gmail.com'
 };
 
 /**
