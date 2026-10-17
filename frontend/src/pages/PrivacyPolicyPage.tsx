@@ -318,7 +318,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         <p className="text-sm leading-relaxed text-[#475569]">
-          Core enquiry databases reside within India (AWS Mumbai region, ap-south-1). In accordance with Section 16 of the DPDP Act 2023, data transmission to global CDN edge caches or transactional email gateways (e.g. Resend) occurs solely to un-restricted jurisdictions and subject to international enterprise security covenants.
+          Core enquiry databases reside within India (AWS Mumbai region, ap-south-1). Enquiries reach that database through our API server, currently hosted by Render in Singapore, which processes them in transit and does not store their content. In accordance with Section 16 of the DPDP Act 2023, data transmission to global CDN edge caches or transactional email gateways (e.g. Resend) occurs solely to un-restricted jurisdictions and subject to international enterprise security covenants.
         </p>
       </section>
 

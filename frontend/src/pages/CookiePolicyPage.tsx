@@ -43,14 +43,7 @@ const STORAGE_ITEMS = [
     lifetime: '5 minutes duration; auto-expires', 
     category: 'Anti-Spam' 
   },
-  { 
-    key: 'attri_nexus_local_inquiries', 
-    type: 'localStorage', 
-    purpose: 'Temporary offline backup copy of your enquiry in case connection drops, ensuring no RFQ is lost.', 
-    lifetime: 'Persists until browser cache is cleared', 
-    category: 'Reliability' 
-  },
-  { 
+  {
     key: 'attri_nexus_local_products_v17', 
     type: 'localStorage', 
     purpose: 'Cached catalogue of grain and feed specs for ultra-fast instant page loading. Zero personal data.', 
@@ -60,16 +53,16 @@ const STORAGE_ITEMS = [
   { 
     key: 'attri_nexus_admin_session', 
     type: 'localStorage', 
-    purpose: 'Encrypted JWT authentication token for authorized Attri Nexus staff dashboard access only.', 
-    lifetime: '7 days session validity', 
-    category: 'Admin Security' 
+    purpose: 'Signed sign-in token for authorized Attri Nexus staff dashboard access only. Never set for website visitors.',
+    lifetime: '12 hours; removed on sign-out',
+    category: 'Admin Security'
   },
-  { 
-    key: 'reset_otp_*', 
-    type: 'sessionStorage', 
-    purpose: 'Temporary password reset token for authorized administrators in development mode.', 
-    lifetime: 'Immediately destroyed when tab is closed', 
-    category: 'Session Security' 
+  {
+    key: 'attri_nexus_admin_theme',
+    type: 'localStorage',
+    purpose: 'Remembers the light or dark display choice in the staff dashboard. Never set for website visitors.',
+    lifetime: 'Until cleared',
+    category: 'Admin Preference'
   }
 ];
 
@@ -81,10 +74,10 @@ const THIRD_PARTY = [
     policy: 'https://www.cloudflare.com/privacypolicy/'
   },
   {
-    name: 'Google Fonts',
-    badge: 'Typography CDN',
-    what: 'Delivers optimized brand typography. Google receives standard browser handshake headers when font files load. Google explicitly confirms it sets no tracking cookies for this font distribution service.',
-    policy: 'https://developers.google.com/fonts/faq/privacy'
+    name: 'Cloudinary',
+    badge: 'Image CDN',
+    what: 'Serves product photographs. Your browser loads these images directly from Cloudinary, which receives standard request information such as your IP address and browser type. Fonts are hosted on this website itself, so no font provider is contacted.',
+    policy: 'https://cloudinary.com/privacy'
   }
 ];
 
@@ -136,7 +129,7 @@ export const CookiePolicyPage: React.FC = () => {
         </div>
 
         <p className="text-sm leading-relaxed text-[#475569]">
-          Instead of persistent third-party cookies, this website utilizes modern browser-native <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-[#0B132B]">localStorage</code> and <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-[#0B132B]">sessionStorage</code>. These values remain isolated on your local device, are never transmitted to marketing networks, and are read only when interacting with our catalogue.
+          Instead of persistent third-party cookies, this website utilizes modern browser-native <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-[#0B132B]">localStorage</code>. Your enquiry details are sent straight to our server and are not kept in your browser. These values remain isolated on your local device, are never transmitted to marketing networks, and are read only when interacting with our catalogue.
         </p>
 
         {/* Visual Cards Grid for Storage Items */}
@@ -189,7 +182,7 @@ export const CookiePolicyPage: React.FC = () => {
         </div>
 
         <p className="text-sm leading-relaxed text-[#475569]">
-          To protect our quotation systems from distributed automated spam and render clean typography, we rely on two trusted infrastructure providers:
+          To protect our quotation systems from distributed automated spam and deliver product images, we rely on two trusted infrastructure providers:
         </p>
 
         <div className="space-y-4">
