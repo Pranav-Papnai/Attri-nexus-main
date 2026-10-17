@@ -98,7 +98,7 @@ services:
   # Starts only when asked for:  docker compose --profile local-db up -d
   # ==========================================
   mongodb:
-    image: mongo:7.0@sha256:9650758f83af117fc96699f030a44f9300bed839734e67012f56df05b2fd6290
+    image: mongo:8.2@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3
     container_name: attri-nexus-mongodb
     restart: always
     profiles: ["local-db"]
