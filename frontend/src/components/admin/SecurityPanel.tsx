@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck, ShieldAlert, KeyRound, Copy, Download, RefreshCw } from 'lucide-react';
+import qrcode from 'qrcode-generator';
 import {
   fetchCurrentAdmin,
   startMfaSetup,
@@ -18,10 +19,21 @@ type Stage = 'loading' | 'off' | 'setup' | 'codes' | 'on';
 
 const groupKey = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
+// Drawn in the browser: the otpauth URL contains the two-factor secret, so it
+// must never be sent to an online QR service.
+function qrDataUrl(text: string): string {
+  if (!text) return '';
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  return qr.createDataURL(5, 4);
+}
+
 export const SecurityPanel: React.FC<SecurityPanelProps> = ({ isDark, onSessionChanged }) => {
   const [stage, setStage] = useState<Stage>('loading');
   const [secret, setSecret] = useState('');
   const [otpauthUrl, setOtpauthUrl] = useState('');
+  const qrImage = useMemo(() => qrDataUrl(otpauthUrl), [otpauthUrl]);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
@@ -157,9 +169,14 @@ export const SecurityPanel: React.FC<SecurityPanelProps> = ({ isDark, onSessionC
         <form onSubmit={confirmEnable} className="mt-4 space-y-3">
           <ol className={`text-xs space-y-1 list-decimal list-inside ${muted}`}>
             <li>Open Google Authenticator, Microsoft Authenticator, Authy or 1Password on your phone.</li>
-            <li>Add an account → <strong>Enter a setup key</strong>, and type the key below (time-based).</li>
+            <li>Add an account → <strong>Scan a QR code</strong> and scan the code below. If scanning is not possible, choose <strong>Enter a setup key</strong> and type the key (time-based).</li>
             <li>Enter the 6-digit code the app shows.</li>
           </ol>
+          {qrImage && (
+            <div className="inline-block p-2 rounded-xl bg-white">
+              <img src={qrImage} alt="Two-factor setup QR code" className="w-44 h-44 [image-rendering:pixelated]" />
+            </div>
+          )}
           <div className={`p-3 rounded-xl font-mono text-sm tracking-wider break-all ${isDark ? 'bg-[#0B0F15] text-[#DFD1BA]' : 'bg-[#FAF8F5] text-[#0D3B2E]'}`}>
             {groupKey(secret)}
           </div>
