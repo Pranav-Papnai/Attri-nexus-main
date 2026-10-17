@@ -29,7 +29,10 @@ export const IS_PROD = NODE_ENV === 'production';
 // every per-IP rate limit and lockout, is read from X-Forwarded-For this many
 // hops back, so it must match the real chain exactly: too high and clients can
 // forge their IP, too low and every visitor shares the proxy's IP.
-// 1 = nginx only (or a PaaS router); docker-compose sets 2 (Caddy -> nginx).
+// docker-compose (EC2) sets 2: Caddy -> nginx. Render needs 3: Cloudflare ->
+// Render load balancer -> Render router (measured 17 Oct 2026). Check after any
+// hosting change: the IP on a sign-in in the dashboard's Security activity must
+// be the visitor's public IP, not a 10.x or Cloudflare address.
 export const TRUST_PROXY_HOPS = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10) || 0;
 
 // Swagger UI maps out every admin endpoint, so production serves it only on request.
