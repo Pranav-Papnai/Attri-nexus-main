@@ -24,14 +24,14 @@
 | ID | Status | What was done |
 |---|---|---|
 | H-1 | ✅ Fixed | The regex HTML stripping was removed; the sanitizer now only strips `$`, `.` and `__proto__`-style keys (`middleware/sanitize.js`). Body limit is 100 KB everywhere, and 6 MB only on the admin upload route (`app.js`). Regression test added |
-| H-2 | ✅ Fixed in code | All `localStorage` fallbacks were removed (`services/api/backend.ts`). A failed enquiry shows a real error with the phone number, and the visitor can retry. Admin update and delete report failure honestly. Old local lead copies are purged from visitors' browsers. **Owner:** host the backend so the live form can actually deliver leads |
-| H-3 | ⏳ Owner action | All fixes are committed to `security-fixes`. **Owner:** open a PR to `main`, review it, merge it, and let Vercel redeploy |
+| H-2 | ✅ Fixed in code | All `localStorage` fallbacks were removed (`services/api/backend.ts`). A failed enquiry shows a real error with the phone number, and the visitor can retry. Admin update and delete report failure honestly. Old local lead copies are purged from visitors' browsers. Backend now hosted on Render for staging (`attri-nexus-main-1.onrender.com`). Checked on 17 October: database connected, `NODE_ENV=production`, API docs off, CORS allows only the Vercel site, admin routes return 401 without a token |
+| H-3 | ✅ Merged | Merged to `main` as PR #1 on 17 October. See V-2: the public Vercel project was still building from an older repository |
 | M-1 | ✅ Fixed | A dedicated limiter counts every forgot-password request (5 per hour per IP). Per-email 60 s cooldown. The response is sent before any work is done |
 | M-2 | ✅ Fixed | Changing your own password requires `currentPassword`, and the endpoint is rate-limited |
 | M-3 | ✅ Fixed | TOTP two-factor (RFC 6238, verified against the RFC test vectors) with 8 one-time recovery codes and replay protection. A Super Admin can reset another admin's 2FA. Password reset no longer signs in an account that has 2FA. **Owner:** turn on 2FA for every admin under Dashboard → Admin Access |
 | M-4 | ✅ Fixed | New `auditlogs` collection with a 1-year TTL. Records sign-ins (including failures), 2FA changes, admin create and delete, password changes, lead edits and deletes, product changes, uploads and CSV exports. Super Admins can view it in the dashboard |
-| M-5 | ✅ Fixed in code | All actions pinned by commit SHA. `permissions: contents: read`. Images tagged with the immutable `github.sha`. Deploy job gated by the `production` environment. `docker logout` after each pull. Tests and audits must pass before build. New `security.yml` (gitleaks, npm audit, semgrep, hadolint, trivy) and Dependabot with a 7-day cooldown. **Owner:** add required reviewers to the `production` environment, protect `main`, and use a read-only Docker Hub token on EC2 |
-| M-6 | ⏳ Owner action | Can't be fixed in code. **Owner:** confirm whether `attri_nexus` is production. If it is, create a separate dev database and user and rotate the Atlas password on the laptop (steps in `SECURITY_RUNBOOK.md`) |
+| M-5 | ✅ Fixed in code | All actions pinned by commit SHA. `permissions: contents: read`. Images tagged with the immutable `github.sha`. Deploy job gated by the `production` environment. `docker logout` after each pull. Tests and audits must pass before build. New `security.yml` (gitleaks, npm audit, semgrep, hadolint, trivy) and Dependabot with a 7-day cooldown. Done on 17 October: `main` is protected by a ruleset that requires a pull request and the 5 CI and security checks (GitHub Actions only), and the `production` environment requires a reviewer. **Owner:** use a read-only Docker Hub token on EC2 (L-9) |
+| M-6 | ✅ Fixed | Done on 17 October. `attri-prod` has `readWrite` on `attri_nexus` only and is stored only in Render. `attri-dev` has `readWrite` on `attri_nexus_dev` only and is used on the laptop; it was confirmed to be refused on the production database. The old `atlasAdmin` user that was on the laptop was deleted, and Atlas was confirmed to refuse its login. Its password is no longer anywhere on the laptop |
 | M-7 | ✅ Fixed | Node 22 in both Dockerfiles, CI, `serverless.yml` (`nodejs22.x`) and `engines` |
 | M-8 | ✅ Fixed | `frontend/src/utils/csv.ts` quotes every cell and neutralises formulas. The server validates phone and email formats |
 | L-1 | ✅ Fixed | forgot-password answers immediately; lookup and email happen in the background |
@@ -46,7 +46,7 @@
 | L-10 | ✅ Fixed | The bundled MongoDB is opt-in (`--profile local-db`), starts with `--auth`, and refuses to run without a root password of at least 16 characters. Every container has memory and CPU limits |
 | L-11 | ✅ Fixed | The EC2 guide now limits SSH to the admin's IP by default. If automatic deploys need port 22 open, it requires disabling password and root login and running fail2ban |
 | L-12 | ✅ Fixed | `seed-admin` reads the password from a hidden prompt or stdin, never from arguments |
-| L-13 | ✅ Fixed | Vercel CSP `connect-src` narrowed to `'self'` and Turnstile. When the backend is hosted on another origin, add exactly that origin |
+| L-13 | ✅ Fixed | Vercel CSP `connect-src` is `'self'`, the Render API origin and Turnstile only (PR #19). When the backend moves to EC2, replace the Render origin with the new one |
 | L-14 | ✅ Fixed | Product writes and image uploads now require Super Admin, matching the UI's description of Commercial Admin |
 | L-15 | ✅ Fixed | Enquiry fields are type-checked and phone and email formats validated; bad input returns 400, not 500 |
 | I-1 | ✅ Fixed | The query string is parsed once with a safe parser, which strips dangerous keys |
@@ -56,12 +56,14 @@
 | I-5 | ✅ Fixed | `.pyc` removed from git; Playwright pinned to stable 1.64.1; `load-tests/requirements.txt` pins `locust` |
 | I-6 | ⏳ Owner action | `npm run migrate:roles` (in `backend`) was added. It does a dry run by default; `--apply` writes. **Owner:** run the dry run, then `--apply`, against the database |
 | V-1 (new) | ✅ Fixed | Found during the browser test: the CSP blocked the confetti animation's background worker, so it fell back to the main thread and logged a console error. `worker-src 'self' blob:` added in `nginx.conf` and both `vercel.json` files. This adds no outside source |
+| V-2 (new) | ⏳ In progress | Found on 17 October: the public site `attri-nexus-web.vercel.app` was building from an older repository (`Pranav-Papnai/Attri_nexus`), so it still served the pre-fix code. Commits to this repository went to a second Vercel project with no public domain. The public project is being reconnected to `Pranav-Papnai/Attri-nexus-main`. **Owner:** after it serves the new build, delete the second Vercel project |
+| V-3 (new) | ✅ Fixed | Found on 17 October: when the admin list failed to load, the dashboard showed a placeholder `master-admin` row whose buttons targeted a non-existent account. It now shows the real error (PR #18) |
 
 **Owner checklist (cannot be done from the code)**
-1. Merge `security-fixes` into `main` (H-3).
-2. Host the backend, with production-only secrets, before relying on the live forms (H-2). Then add its origin to the CSP `connect-src` (L-13).
-3. Separate the dev and production databases, and rotate the Atlas password (M-6).
-4. GitHub: protect `main`, and add required reviewers to the `production` environment (M-5).
+1. ~~Merge `security-fixes` into `main` (H-3).~~ Done.
+2. ~~Host the backend, with production-only secrets (H-2), and add its origin to the CSP `connect-src` (L-13).~~ Done (Render, staging). Remaining: finish reconnecting the public Vercel project (V-2).
+3. ~~Separate the dev and production databases, and rotate the Atlas password (M-6).~~ Done.
+4. ~~GitHub: protect `main`, and add required reviewers to the `production` environment (M-5).~~ Done.
 5. Docker Hub: make the repositories private, and use a read-only token on EC2 (L-9, M-5).
 6. Turn on 2FA for every admin (M-3), and run `npm run migrate:roles` (I-6).
 7. Check the Atlas tier for backups, and set up uptime monitoring (§9; see `SECURITY_RUNBOOK.md`).
