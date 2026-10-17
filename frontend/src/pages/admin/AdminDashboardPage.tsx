@@ -751,20 +751,13 @@ export const AdminDashboardPage: React.FC = () => {
     setIsLoadingAdminUsers(true);
     const res = await listAdminUsers();
     setIsLoadingAdminUsers(false);
-    if (res.success && res.users && res.users.length > 0) {
+    if (res.success && res.users) {
       setAdminUsers(res.users);
     } else {
-      // Fallback: Display currently logged in admin user
-      setAdminUsers([
-        {
-          id: 'master-admin',
-          email: adminUser?.email || 'admin@attrinexus.com',
-          name: adminUser?.name || 'Master Administrator',
-          role: adminUser?.role || 'Commercial Admin',
-          mfaEnabled: adminUser?.mfaEnabled,
-          createdAt: new Date().toISOString()
-        }
-      ]);
+      // Show the real failure. A placeholder row here would point the
+      // password and delete buttons at an account that does not exist.
+      setAdminUsers([]);
+      showToast(res.error || 'Could not load admin accounts.');
     }
   };
 
