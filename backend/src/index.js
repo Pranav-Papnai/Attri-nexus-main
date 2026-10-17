@@ -11,7 +11,7 @@ if (missingRequired.length > 0) {
   for (const [key, why] of missingRequired) {
     console.error(`  ${key}  - ${why}`);
   }
-  console.error('\nAdd them to .env.local in the project root, then start again.\n');
+  console.error('\nSet them in .env.local (local development) or in the host\'s environment settings (Render: Environment; EC2: the .env next to docker-compose.yml), then start again.\n');
   process.exit(1);
 }
 

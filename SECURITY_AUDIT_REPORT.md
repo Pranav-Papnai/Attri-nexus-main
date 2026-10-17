@@ -54,20 +54,23 @@
 | I-3 | ✅ Fixed | The dead `frontend/.github` workflow was removed; CI runs the backend tests and the security scans |
 | I-4 | ✅ Fixed | Scarf telemetry disabled through `scarfSettings` in `backend/package.json` |
 | I-5 | ✅ Fixed | `.pyc` removed from git; Playwright pinned to stable 1.64.1; `load-tests/requirements.txt` pins `locust` |
-| I-6 | ⏳ Owner action | `npm run migrate:roles` (in `backend`) was added. It does a dry run by default; `--apply` writes. **Owner:** run the dry run, then `--apply`, against the database |
+| I-6 | ✅ Done | `npm run migrate:roles` was run against production on 17 October and reported that every admin already has a current role (`manager@attrinexus.com` is now `Commercial Admin`) |
 | V-1 (new) | ✅ Fixed | Found during the browser test: the CSP blocked the confetti animation's background worker, so it fell back to the main thread and logged a console error. `worker-src 'self' blob:` added in `nginx.conf` and both `vercel.json` files. This adds no outside source |
-| V-2 (new) | ⏳ In progress | Found on 17 October: the public site `attri-nexus-web.vercel.app` was building from an older repository (`Pranav-Papnai/Attri_nexus`), so it still served the pre-fix code. Commits to this repository went to a second Vercel project with no public domain. The public project is being reconnected to `Pranav-Papnai/Attri-nexus-main`. **Owner:** after it serves the new build, delete the second Vercel project |
-| V-4 (new) | ✅ Fixed | Found on 17 October: with `TRUST_PROXY_HOPS=1` on Render, the API saw Render's internal `10.x` address as every visitor's IP, so per-IP rate limits were shared by all visitors and anyone could trigger the admin's login lockout. Render's chain is Cloudflare → load balancer → router, so it needs `3`. Verified: with `3`, a test sign-in recorded the real public IP, and a request carrying a forged `X-Forwarded-For: 1.2.3.4` still recorded the real IP. Documented in `config.js` and `.env.example` (EC2 with docker-compose stays `2`) |
+| V-2 (new) | ✅ Fixed | Found on 17 October: the public site `attri-nexus-web.vercel.app` was building from an older repository (`Pranav-Papnai/Attri_nexus`), so it still served the pre-fix code. Commits to this repository went to a second Vercel project with no public domain. The public project was reconnected to `Pranav-Papnai/Attri-nexus-main`. Verified the same day: the live site sends the new CSP, calls the Render API, and no longer contains the fake-login code. **Owner:** delete the second Vercel project (`attri-nexus-main`) so each merge deploys once |
 | V-3 (new) | ✅ Fixed | Found on 17 October: when the admin list failed to load, the dashboard showed a placeholder `master-admin` row whose buttons targeted a non-existent account. It now shows the real error (PR #18) |
+| V-4 (new) | ✅ Fixed | Found on 17 October: with `TRUST_PROXY_HOPS=1` on Render, the API saw Render's internal `10.x` address as every visitor's IP, so per-IP rate limits were shared by all visitors and anyone could trigger the admin's login lockout. Render's chain is Cloudflare → load balancer → router, so it needs `3`. Verified: with `3`, a test sign-in recorded the real public IP, and a request carrying a forged `X-Forwarded-For: 1.2.3.4` still recorded the real IP. Documented in `config.js` and `.env.example` (EC2 with docker-compose stays `2`) |
+| V-5 (new) | ✅ Fixed | Found on 17 October: the Cookie and Privacy Policies described storage and processors the site no longer uses (an offline enquiry copy, a 7-day admin token, Google Fonts, API hosted in Mumbai). Updated to match the code, with the API host (Render, Singapore) disclosed; policy version `2026-10` (PR #21) |
+| V-6 (new) | ✅ Fixed | Found on 17 October: the two-factor setup screen had no QR code, which made setup hard. A QR code is now drawn in the browser (no online QR service sees the secret) (PR #22) |
+| V-7 (new) | ⏳ Owner action | Found on 17 October: production has a Super Admin whose email is just `pranav` (likely created before email validation existed) and `admin@attrinexus.com`, whose inbox the owner does not use, so its password cannot be reset by email. **Owner:** delete both in Admin Access if they are not needed |
 
 **Owner checklist (cannot be done from the code)**
 1. ~~Merge `security-fixes` into `main` (H-3).~~ Done.
-2. ~~Host the backend, with production-only secrets (H-2), and add its origin to the CSP `connect-src` (L-13).~~ Done (Render, staging). Remaining: finish reconnecting the public Vercel project (V-2).
+2. ~~Host the backend, with production-only secrets (H-2), and add its origin to the CSP `connect-src` (L-13).~~ Done (Render, staging). ~~Reconnect the public Vercel project (V-2).~~ Done. Remaining: delete the second Vercel project.
 3. ~~Separate the dev and production databases, and rotate the Atlas password (M-6).~~ Done.
 4. ~~GitHub: protect `main`, and add required reviewers to the `production` environment (M-5).~~ Done.
 5. Docker Hub: make the repositories private, and use a read-only token on EC2 (L-9, M-5).
-6. Turn on 2FA for every admin (M-3), and run `npm run migrate:roles` (I-6).
-7. Check the Atlas tier for backups, and set up uptime monitoring (§9; see `SECURITY_RUNBOOK.md`).
+6. Turn on 2FA for every admin (M-3). ~~Run `npm run migrate:roles` (I-6).~~ Done. Delete the unknown admin accounts (V-7).
+7. Check the Atlas tier for backups (cluster shows "Backups Inactive"), and set up uptime monitoring (§9; see `SECURITY_RUNBOOK.md`).
 
 ---
 
