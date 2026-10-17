@@ -21,18 +21,31 @@ updates:
     groups:
       frontend-minor-and-patch:
         update-types: [minor, patch]
+  # Node majors are skipped: odd releases (23, 25) are never LTS, and moving
+  # to the next LTS is a deliberate change (Dockerfiles, CI, engines together).
   - package-ecosystem: docker
     directory: /backend
     schedule: { interval: weekly }
     cooldown: { default-days: 7 }
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
   - package-ecosystem: docker
     directory: /frontend
     schedule: { interval: weekly }
     cooldown: { default-days: 7 }
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+  # A MongoDB major upgrade changes the on-disk data format of the bundled
+  # database, so it is done deliberately, not from a weekly bump.
   - package-ecosystem: docker-compose
     directory: /
     schedule: { interval: weekly }
     cooldown: { default-days: 7 }
+    ignore:
+      - dependency-name: mongo
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }

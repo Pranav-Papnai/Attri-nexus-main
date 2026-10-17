@@ -96,10 +96,6 @@ const WEAK = [
 // are reported once at boot instead of blocking startup.
 const OPTIONAL = [
   ['MONGODB_URI', '/api/products, /api/inquiries and /api/auth answer 503 until it is set'],
-  ['CLOUDINARY_URL', 'product image uploads are refused with a clear error'],
-  ['CLOUDINARY_CLOUD_NAME', 'product image uploads are refused with a clear error'],
-  ['CLOUDINARY_API_KEY', 'product image uploads are refused with a clear error'],
-  ['CLOUDINARY_API_SECRET', 'product image uploads are refused with a clear error'],
   ['TURNSTILE_SECRET_KEY', 'CAPTCHA is skipped - the enquiry form accepts unverified submissions'],
   ['RESEND_API_KEY', 'no email notification is sent when an enquiry arrives'],
   ['ADMIN_NOTIFICATION_EMAIL', 'no recipient for enquiry notification emails']
@@ -111,6 +107,17 @@ export function checkEnv() {
       ...REQUIRED.filter(([key]) => !process.env[key]),
       ...WEAK.filter(([, , isWeak]) => isWeak()).map(([key, why]) => [key, why])
     ],
-    missingOptional: OPTIONAL.filter(([key]) => !process.env[key])
+    missingOptional: [
+      ...OPTIONAL.filter(([key]) => !process.env[key]),
+      // Cloudinary takes either one URL or three separate values (see lib/storage.js).
+      ...(hasCloudinaryConfig()
+        ? []
+        : [['CLOUDINARY_URL', 'product image uploads are refused with a clear error (or set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET)']])
+    ]
   };
+}
+
+function hasCloudinaryConfig() {
+  const env = process.env;
+  return Boolean(env.CLOUDINARY_URL || (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET));
 }

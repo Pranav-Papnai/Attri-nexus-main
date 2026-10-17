@@ -9,6 +9,8 @@ The API for the Attri Nexus storefront and admin dashboard. Express 5 + MongoDB
 cp .env.example .env.local            # in the repo root, then fill it in
 npm install                           # inside backend/
 npm run seed:admin -- you@example.com --name "Your Name"   # prompts for the password
+# Windows PowerShell drops the "--", so run the script directly there:
+#   node scripts/seed-admin.js you@example.com --name "Your Name"
 npm run dev                           # http://localhost:3001/api/health
 ```
 
