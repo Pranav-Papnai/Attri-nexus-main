@@ -1,17 +1,23 @@
 import { apiUrl } from './config';
 
 const SESSION_KEY = 'attri_nexus_admin_session';
-const LOCAL_ADMINS_KEY = 'attri_nexus_local_admins_v2';
 
-// Matches the server's token TTL (api/auth/login.js) — duplicated here only
-// because decoding the JWT client-side to read its real `exp` would need an
-// extra library for no real benefit at this scale.
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// Older builds kept admin accounts, including plaintext passwords, in this
+// key. Removed on load so those passwords do not linger in the browser.
+const LEGACY_LOCAL_ADMINS_KEY = 'attri_nexus_local_admins_v2';
+
+// Matches the server's token TTL (backend/src/config.js TOKEN_TTL) — duplicated
+// here only because decoding the JWT client-side to read its real `exp` would
+// need an extra library for no real benefit at this scale.
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+const UNREACHABLE = 'Could not reach the server. Please check your connection and try again.';
 
 export interface AdminSessionUser {
   email: string;
   name: string;
   role: string;
+  mfaEnabled?: boolean;
 }
 
 export interface AdminUserRecord {
@@ -19,9 +25,28 @@ export interface AdminUserRecord {
   email: string;
   name: string;
   role: string;
+  mfaEnabled?: boolean;
   createdAt?: string;
-  password?: string;
 }
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  action: string;
+  actorEmail?: string;
+  targetType?: string;
+  targetId?: string;
+  ip?: string;
+  meta?: Record<string, unknown>;
+}
+
+export type LoginResult = {
+  success: boolean;
+  error?: string;
+  user?: AdminSessionUser;
+  mfaRequired?: boolean;
+  mfaToken?: string;
+};
 
 interface StoredSession {
   token: string;
@@ -29,62 +54,23 @@ interface StoredSession {
   expiresAt: number;
 }
 
-// Master Admin Seed Accounts for seamless zero-friction local/offline/Vercel authentication
-const DEFAULT_SUPER_ADMIN: AdminUserRecord = {
-  id: 'admin_master_01',
-  email: 'admin@attrinexus.com',
-  name: 'Master Administrator',
-  role: 'Super Admin',
-  password: 'AttriAdmin2026!',
-  createdAt: '2026-09-01T00:00:00.000Z'
-};
-
-const DEFAULT_TRADE_MANAGER: AdminUserRecord = {
-  id: 'admin_manager_02',
-  email: 'manager@attrinexus.com',
-  name: 'Trade Desk Manager',
-  role: 'Commercial Admin',
-  password: 'AttriAdmin2026!',
-  createdAt: '2026-09-02T00:00:00.000Z'
-};
-
-function getLocalAdmins(): AdminUserRecord[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_ADMINS_KEY);
-    if (!raw) {
-      const initial = [DEFAULT_SUPER_ADMIN, DEFAULT_TRADE_MANAGER];
-      localStorage.setItem(LOCAL_ADMINS_KEY, JSON.stringify(initial));
-      return initial;
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const initial = [DEFAULT_SUPER_ADMIN, DEFAULT_TRADE_MANAGER];
-      localStorage.setItem(LOCAL_ADMINS_KEY, JSON.stringify(initial));
-      return initial;
-    }
-    // Ensure default master admin is always present
-    if (!parsed.some((u: any) => u.email === DEFAULT_SUPER_ADMIN.email)) {
-      parsed.unshift(DEFAULT_SUPER_ADMIN);
-      localStorage.setItem(LOCAL_ADMINS_KEY, JSON.stringify(parsed));
-    }
-    return parsed;
-  } catch {
-    return [DEFAULT_SUPER_ADMIN, DEFAULT_TRADE_MANAGER];
-  }
-}
-
-function saveLocalAdmins(admins: AdminUserRecord[]) {
-  try {
-    localStorage.setItem(LOCAL_ADMINS_KEY, JSON.stringify(admins));
-  } catch {}
-}
+try {
+  localStorage.removeItem(LEGACY_LOCAL_ADMINS_KEY);
+} catch {}
 
 function readSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSession;
-    if (!parsed?.token || !parsed?.expiresAt || Date.now() >= parsed.expiresAt) {
+    // Sessions minted by the old client-side fallback carry a fake
+    // "attri_session_" token that the server never issued.
+    if (
+      !parsed?.token ||
+      parsed.token.startsWith('attri_session_') ||
+      !parsed?.expiresAt ||
+      Date.now() >= parsed.expiresAt
+    ) {
       localStorage.removeItem(SESSION_KEY);
       return null;
     }
@@ -119,100 +105,51 @@ export function getAdminAuthHeader(): Record<string, string> {
   return session ? { Authorization: `Bearer ${session.token}` } : {};
 }
 
-/**
- * Normalizes email or username inputs (e.g. "admin" -> "admin@attrinexus.com")
- */
-function normalizeLoginIdentifier(id: string): string {
-  const clean = id.trim().toLowerCase();
-  if (clean === 'admin') return 'admin@attrinexus.com';
-  if (clean === 'manager') return 'manager@attrinexus.com';
-  return clean;
+async function readBody(res: Response): Promise<any> {
+  return res.json().catch(() => ({}));
 }
 
-export async function adminLogin(
-  emailOrUsername: string,
-  password: string
-): Promise<{ success: boolean; error?: string; user?: AdminSessionUser }> {
-  const normEmail = normalizeLoginIdentifier(emailOrUsername);
-  const normPass = password.trim();
-
-  // 1. First, attempt backend authentication if the backend is running
+export async function adminLogin(email: string, password: string): Promise<LoginResult> {
   try {
     const res = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normEmail, password: normPass })
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password })
     });
+    const body = await readBody(res);
 
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.success && body.token && body.user) {
-        writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
-        return { success: true, user: body.user };
-      }
-    } else if (res.status === 401) {
-      // Backend explicitly rejected credentials (wrong password in DB)
-      // Check local master fallback before rejecting, in case local seed differs
-      const localMatch = checkLocalCredentials(normEmail, normPass);
-      if (localMatch) {
-        const userObj: AdminSessionUser = {
-          email: localMatch.email,
-          name: localMatch.name,
-          role: localMatch.role
-        };
-        const token = `attri_session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        writeSession({ token, user: userObj, expiresAt: Date.now() + TOKEN_TTL_MS });
-        return { success: true, user: userObj };
-      }
-
-      const body = await res.json().catch(() => ({}));
-      return { success: false, error: body.error || 'Invalid credentials. Please enter correct Email and Password.' };
+    if (res.ok && body.success && body.mfaRequired && body.mfaToken) {
+      return { success: false, mfaRequired: true, mfaToken: body.mfaToken };
     }
-  } catch (err) {
-    // Backend offline / proxy timeout / static Vercel deployment
-    console.warn('Backend server not reachable, attempting offline/master authentication fallback.');
+
+    if (res.ok && body.success && body.token && body.user) {
+      writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
+      return { success: true, user: body.user };
+    }
+
+    return { success: false, error: body.error || 'Invalid credentials. Please enter correct Email and Password.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  // 2. Offline / Static Vercel Fallback: Verify against Master Admin & Local Accounts
-  const localAccount = checkLocalCredentials(normEmail, normPass);
-
-  if (localAccount) {
-    const userObj: AdminSessionUser = {
-      email: localAccount.email,
-      name: localAccount.name,
-      role: localAccount.role
-    };
-    const token = `attri_session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    writeSession({ token, user: userObj, expiresAt: Date.now() + TOKEN_TTL_MS });
-    return { success: true, user: userObj };
-  }
-
-  return {
-    success: false,
-    error: 'Invalid credentials. Please enter correct Email and Password.'
-  };
 }
 
-function checkLocalCredentials(email: string, pass: string): AdminUserRecord | null {
-  const admins = getLocalAdmins();
-
-  for (const admin of admins) {
-    if (admin.email.toLowerCase() === email) {
-      // Check exact match
-      if (admin.password === pass) {
-        return admin;
-      }
-      // If default admin, also accept AttriAdmin2026 without exclamation mark for convenience
-      if (
-        (admin.email === 'admin@attrinexus.com' || admin.email === 'manager@attrinexus.com') &&
-        (pass === 'AttriAdmin2026!' || pass === 'AttriAdmin2026' || pass === 'attriadmin2026')
-      ) {
-        return admin;
-      }
+// Second step of a two-factor login: an authenticator code or a recovery code.
+export async function completeMfaLogin(mfaToken: string, code: string): Promise<LoginResult> {
+  try {
+    const res = await fetch(apiUrl('/api/auth/login/mfa'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken, code: code.trim() })
+    });
+    const body = await readBody(res);
+    if (res.ok && body.success && body.token && body.user) {
+      writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
+      return { success: true, user: body.user };
     }
+    return { success: false, error: body.error || 'Invalid authentication code.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  return null;
 }
 
 export function adminLogout() {
@@ -233,59 +170,27 @@ export async function registerAdmin(
   password: string,
   name?: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(apiUrl('/api/auth/register'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
-      body: JSON.stringify({ email, password, name })
-    });
-    const body = await res.json().catch(() => ({}));
-    if (res.ok && body.success) {
-      return { success: true };
-    }
-  } catch (err) {
-    // Offline fallback
-  }
-
-  // Local fallback
-  return createAdminUser({ email, password, name });
+  const res = await createAdminUser({ email, password, name });
+  return { success: res.success, error: res.error };
 }
 
 export async function requestPasswordReset(
   email: string
-): Promise<{ success: boolean; message?: string; error?: string; devOtp?: string; emailSent?: boolean }> {
-  const normEmail = normalizeLoginIdentifier(email);
-
+): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const res = await fetch(apiUrl('/api/auth/forgot-password'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normEmail })
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.success) return body;
+    const body = await readBody(res);
+    if (res.ok && body.success) {
+      return { success: true, message: body.message };
     }
-  } catch (err) {
-    // Offline fallback
+    return { success: false, error: body.error || 'Could not request a reset code. Please try again.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  const account = getLocalAdmins().find((a) => a.email.toLowerCase() === normEmail);
-  if (!account) {
-    return { success: false, error: 'No admin account found with this email address.' };
-  }
-
-  const devOtp = String(Math.floor(100000 + Math.random() * 900000));
-  try {
-    sessionStorage.setItem(`reset_otp_${normEmail}`, devOtp);
-  } catch {}
-
-  return {
-    success: true,
-    message: 'Verification code generated.',
-    devOtp,
-    emailSent: false
-  };
 }
 
 export async function verifyAndResetPassword(
@@ -293,56 +198,27 @@ export async function verifyAndResetPassword(
   otp: string,
   newPassword: string
 ): Promise<{ success: boolean; message?: string; error?: string; user?: AdminSessionUser }> {
-  const normEmail = normalizeLoginIdentifier(email);
-
   try {
     const res = await fetch(apiUrl('/api/auth/reset-password'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: normEmail,
+        email: email.trim().toLowerCase(),
         otp: otp.trim(),
         newPassword
       })
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.success) {
-        if (body.token && body.user) {
-          writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
-        }
-        return body;
+    const body = await readBody(res);
+    if (res.ok && body.success) {
+      if (body.token && body.user) {
+        writeSession({ token: body.token, user: body.user, expiresAt: Date.now() + TOKEN_TTL_MS });
       }
+      return body;
     }
-  } catch (err) {
-    // Offline fallback
+    return { success: false, error: body.error || 'Invalid or expired reset code.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  try {
-    const storedOtp = sessionStorage.getItem(`reset_otp_${normEmail}`);
-    if (storedOtp && storedOtp === otp.trim()) {
-      const admins = getLocalAdmins();
-      const target = admins.find((a) => a.email.toLowerCase() === normEmail);
-      if (target) {
-        target.password = newPassword;
-        saveLocalAdmins(admins);
-        sessionStorage.removeItem(`reset_otp_${normEmail}`);
-        const userObj: AdminSessionUser = {
-          email: target.email,
-          name: target.name,
-          role: target.role
-        };
-        writeSession({
-          token: `attri_session_${Date.now()}`,
-          user: userObj,
-          expiresAt: Date.now() + TOKEN_TTL_MS
-        });
-        return { success: true, message: 'Password reset successfully.', user: userObj };
-      }
-    }
-  } catch {}
-
-  return { success: false, error: 'Invalid or expired reset code.' };
 }
 
 export async function listAdminUsers(): Promise<{ success: boolean; users?: AdminUserRecord[]; error?: string }> {
@@ -350,24 +226,14 @@ export async function listAdminUsers(): Promise<{ success: boolean; users?: Admi
     const res = await fetch(apiUrl('/api/auth/users'), {
       headers: { ...getAdminAuthHeader() }
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.success && Array.isArray(body.users) && body.users.length > 0) {
-        return { success: true, users: body.users };
-      }
+    const body = await readBody(res);
+    if (res.ok && body.success && Array.isArray(body.users)) {
+      return { success: true, users: body.users };
     }
-  } catch (err) {
-    console.warn('Backend listAdminUsers unreachable, using local accounts.');
+    return { success: false, error: body.error || 'Could not load admin accounts.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  const local = getLocalAdmins().map((a) => ({
-    id: a.id,
-    email: a.email,
-    name: a.name,
-    role: a.role,
-    createdAt: a.createdAt
-  }));
-  return { success: true, users: local };
 }
 
 export async function createAdminUser(data: {
@@ -376,116 +242,163 @@ export async function createAdminUser(data: {
   name?: string;
   role?: string;
 }): Promise<{ success: boolean; user?: AdminUserRecord; error?: string }> {
-  const normalizedEmail = data.email.trim().toLowerCase();
-
   try {
     const res = await fetch(apiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
-      body: JSON.stringify({ ...data, email: normalizedEmail })
+      body: JSON.stringify({ ...data, email: data.email.trim().toLowerCase() })
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.success && body.user) {
-        // Also keep local storage in sync
-        const admins = getLocalAdmins();
-        if (!admins.some((a) => a.email.toLowerCase() === normalizedEmail)) {
-          admins.push({
-            id: body.user.id || `admin_${Date.now()}`,
-            email: normalizedEmail,
-            name: data.name?.trim() || 'Admin User',
-            role: data.role || 'Commercial Admin',
-            password: data.password.trim(),
-            createdAt: new Date().toISOString()
-          });
-          saveLocalAdmins(admins);
-        }
-        return { success: true, user: body.user };
-      }
+    const body = await readBody(res);
+    if (res.ok && body.success && body.user) {
+      return { success: true, user: body.user };
     }
-  } catch (err) {
-    console.warn('Backend createAdminUser unreachable, creating account in local storage.');
+    return { success: false, error: body.error || 'Could not create admin account.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  const admins = getLocalAdmins();
-  if (admins.some((a) => a.email.toLowerCase() === normalizedEmail)) {
-    return { success: false, error: 'An admin account with this email already exists.' };
-  }
-
-  const newAdmin: AdminUserRecord = {
-    id: `admin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    email: normalizedEmail,
-    name: data.name?.trim() || 'Admin User',
-    role: data.role || 'Commercial Admin',
-    password: data.password.trim(),
-    createdAt: new Date().toISOString()
-  };
-
-  admins.push(newAdmin);
-  saveLocalAdmins(admins);
-
-  return {
-    success: true,
-    user: {
-      id: newAdmin.id,
-      email: newAdmin.email,
-      name: newAdmin.name,
-      role: newAdmin.role,
-      createdAt: newAdmin.createdAt
-    }
-  };
 }
 
 export async function deleteAdminUser(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(apiUrl(`/api/auth/users/${id}`), {
+    const res = await fetch(apiUrl(`/api/auth/users/${encodeURIComponent(id)}`), {
       method: 'DELETE',
       headers: { ...getAdminAuthHeader() }
     });
-    if (res.ok) {
-      // Remove from local storage too
-      const admins = getLocalAdmins().filter((a) => a.id !== id);
-      saveLocalAdmins(admins);
-      return { success: true };
-    }
-  } catch (err) {
-    console.warn('Backend deleteAdminUser unreachable, removing from local storage.');
+    const body = await readBody(res);
+    if (res.ok && body.success) return { success: true };
+    return { success: false, error: body.error || 'Could not delete admin account.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
-
-  const admins = getLocalAdmins().filter((a) => a.id !== id);
-  saveLocalAdmins(admins);
-  return { success: true };
 }
 
 export async function updateAdminPassword(
   id: string,
-  newPassword: string
+  newPassword: string,
+  currentPassword?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(apiUrl(`/api/auth/users/${id}/password`), {
+    const res = await fetch(apiUrl(`/api/auth/users/${encodeURIComponent(id)}/password`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
-      body: JSON.stringify({ newPassword })
+      body: JSON.stringify({ newPassword, currentPassword })
     });
-    if (res.ok) {
-      const admins = getLocalAdmins();
-      const user = admins.find((a) => a.id === id);
-      if (user) {
-        user.password = newPassword.trim();
-        saveLocalAdmins(admins);
+    const body = await readBody(res);
+    if (res.ok && body.success) {
+      // Changing your own password ends every session, this one included; the
+      // server hands back a replacement token so the dashboard stays signed in.
+      const current = readSession();
+      if (body.token && current) {
+        writeSession({ token: body.token, user: current.user, expiresAt: Date.now() + TOKEN_TTL_MS });
       }
       return { success: true };
     }
-  } catch (err) {
-    console.warn('Backend updateAdminPassword unreachable, updating in local storage.');
+    return { success: false, error: body.error || 'Could not update password.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
   }
+}
 
-  const admins = getLocalAdmins();
-  const user = admins.find((a) => a.id === id);
-  if (user) {
-    user.password = newPassword.trim();
-    saveLocalAdmins(admins);
-    return { success: true };
+// Replaces the stored session after a change that ends other sessions
+// (enabling two-factor), keeping this browser signed in.
+function replaceSession(token: string | undefined, patch: Partial<AdminSessionUser>) {
+  const current = readSession();
+  if (current) {
+    writeSession({
+      token: token || current.token,
+      user: { ...current.user, ...patch },
+      expiresAt: token ? Date.now() + TOKEN_TTL_MS : current.expiresAt
+    });
   }
-  return { success: false, error: 'User account not found.' };
+}
+
+async function authedJson(path: string, method: 'GET' | 'POST' | 'DELETE', payload?: unknown) {
+  const res = await fetch(apiUrl(path), {
+    method,
+    headers: { ...(payload ? { 'Content-Type': 'application/json' } : {}), ...getAdminAuthHeader() },
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  return { ok: res.ok, status: res.status, body: await readBody(res) };
+}
+
+export async function fetchCurrentAdmin(): Promise<{
+  success: boolean;
+  user?: AdminSessionUser & { id: string };
+  error?: string;
+}> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/me', 'GET');
+    return ok && body.user ? { success: true, user: body.user } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function startMfaSetup(): Promise<{ success: boolean; secret?: string; otpauthUrl?: string; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/setup', 'POST', {});
+    return ok ? { success: true, secret: body.secret, otpauthUrl: body.otpauthUrl } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function enableMfa(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/enable', 'POST', { code: code.trim() });
+    if (!ok) return { success: false, error: body.error || 'Could not turn on two-factor authentication.' };
+    replaceSession(body.token, { mfaEnabled: true });
+    return { success: true, recoveryCodes: body.recoveryCodes };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function disableMfa(password: string, code: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/disable', 'POST', { password, code: code.trim() });
+    if (!ok) return { success: false, error: body.error || 'Could not turn off two-factor authentication.' };
+    replaceSession(undefined, { mfaEnabled: false });
+    return { success: true };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function regenerateRecoveryCodes(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson('/api/auth/mfa/recovery-codes', 'POST', { code: code.trim() });
+    return ok ? { success: true, recoveryCodes: body.recoveryCodes } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function resetAdminMfa(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { ok, body } = await authedJson(`/api/auth/users/${encodeURIComponent(id)}/mfa`, 'DELETE');
+    return ok ? { success: true } : { success: false, error: body.error || 'Could not reset two-factor authentication.' };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+export async function fetchAuditLog(limit = 200): Promise<{ success: boolean; entries?: AuditEntry[]; error?: string }> {
+  try {
+    const { ok, body } = await authedJson(`/api/audit?limit=${limit}`, 'GET');
+    return ok && Array.isArray(body.data) ? { success: true, entries: body.data } : { success: false, error: body.error };
+  } catch {
+    return { success: false, error: UNREACHABLE };
+  }
+}
+
+// Lead CSVs are built in the browser, so each export is reported to the
+// audit log first. Exporting is refused when that fails, so the log stays complete.
+export async function recordLeadExport(count: number, range: string): Promise<boolean> {
+  try {
+    const { ok } = await authedJson('/api/audit/lead-export', 'POST', { count, range });
+    return ok;
+  } catch {
+    return false;
+  }
 }

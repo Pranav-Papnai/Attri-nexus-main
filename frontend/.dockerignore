@@ -1,8 +1,12 @@
 node_modules
 dist
 .git
-.env.local
-.env
 npm-debug.log
 playwright-report
 test-results
+# Never copy any environment file into an image (images are public).
+.env
+.env.*
+!.env.example
+*.pem
+*.key

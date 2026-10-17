@@ -1,10 +1,10 @@
 # =============================================================
 # Attri Nexus API - Production Multi-stage Dockerfile
-# Node.js 20 on lightweight Alpine Linux (Hardened Non-root)
+# Node.js 22 LTS on lightweight Alpine Linux (Hardened Non-root)
 # =============================================================
 
 # Stage 1: Dependencies builder
-FROM node:20-alpine AS deps
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS deps
 
 WORKDIR /app
 
@@ -13,18 +13,16 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Stage 2: Minimal Production Runtime
-FROM node:20-alpine AS runner
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runner
 
-# Install dumb-init for proper signal forwarding and PID 1 zombie process reaping
-# Install curl for reliable container health check
-RUN apk add --no-cache dumb-init curl
-
-# Setup workdir and non-root user ownership
+# No extra OS packages: the health check uses Node's built-in fetch, and
+# signal handling/zombie reaping comes from `init: true` in docker-compose.yml
+# (src/index.js also handles SIGTERM itself for a graceful shutdown).
 WORKDIR /app
 RUN chown -R node:node /app
 
-# Switch to non-root user (node: UID 1000)
-USER node
+# Non-root: the image's built-in `node` user (UID/GID 1000)
+USER 1000:1000
 
 # Copy dependencies and application source with non-root ownership
 COPY --chown=node:node --from=deps /app/node_modules ./node_modules
@@ -41,8 +39,7 @@ ENV PORT=3001
 
 # Container health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3001/api/health || exit 1
+  CMD ["node", "-e", "fetch('http://localhost:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
-# Start production server using dumb-init
-CMD ["dumb-init", "node", "src/index.js"]
+CMD ["node", "src/index.js"]
 

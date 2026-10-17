@@ -4,9 +4,9 @@
 Base URL: http://localhost:3001
 Format:   JSON (application/json)
 
-DEFAULT ADMIN CREDENTIALS:
+ADMIN CREDENTIALS (create your own with: npm run seed:admin -- <email>   - it prompts for the password):
 - Email:    admin@attrinexus.com
-- Password: AttriAdmin2026!
+- Password: <your-admin-password>
 
 --------------------------------------------------------------------------------
 QUICK OVERVIEW OF AUTHENTICATION IN POSTMAN / THUNDERCLIENT:
@@ -62,7 +62,7 @@ POSTMAN / THUNDER CLIENT STEPS:
 6. Paste this JSON into the text box:
 {
   "email": "admin@attrinexus.com",
-  "password": "AttriAdmin2026!"
+  "password": "<your-admin-password>"
 }
 7. Click "Send" button.
 8. COPY THE "token" STRING FROM THE RESPONSE TO USE IN NEXT STEPS.
@@ -71,7 +71,7 @@ EXPECTED STATUS: 200 OK
 EXPECTED RESPONSE BODY:
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "<JWT returned by the server>",
   "user": {
     "email": "admin@attrinexus.com",
     "name": "Attri Nexus Administrator",
@@ -82,7 +82,7 @@ EXPECTED RESPONSE BODY:
 TERMINAL / CURL COMMAND:
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@attrinexus.com\",\"password\":\"AttriAdmin2026!\"}"
+  -d "{\"email\":\"admin@attrinexus.com\",\"password\":\"<your-admin-password>\"}"
 
 
 ================================================================================
@@ -448,4 +448,4 @@ SUMMARY OF TESTING FLOW:
 
 All steps verified and ready for testing!
 ================================================================================
-JWT TOKEN = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YTk4MGRlZTQ2NmMzYzQ3NGYzNWM3OTIiLCJlbWFpbCI6Im1hbmFnZXJAYXR0cmluZXh1cy5jb20iLCJpYXQiOjE3ODgzNjg3ODEsImV4cCI6MTc4ODk3MzU4MX0.13MnAdcx28g0wHgtse5tnzzFqZvsygcK7pIOMjQ18IA
+JWT TOKEN = <YOUR_JWT_TOKEN>

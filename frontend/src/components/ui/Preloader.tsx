@@ -18,6 +18,8 @@ export const Preloader: React.FC<PreloaderProps> = ({ onFinish }) => {
           clearInterval(interval);
           return 100;
         }
+        // Animation timing only, not security-relevant.
+        // nosemgrep: ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
         const jump = Math.floor(Math.random() * 20) + 15;
         return Math.min(prev + jump, 100);
       });

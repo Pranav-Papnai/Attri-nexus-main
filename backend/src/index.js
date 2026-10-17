@@ -1,13 +1,13 @@
 // config.js must be imported first: it loads .env.local before any other
 // module reads process.env.
-import { PORT, NODE_ENV, checkEnv } from './config.js';
+import { PORT, NODE_ENV, API_DOCS_ENABLED, checkEnv } from './config.js';
 import { connectDB, disconnectDB, isConfigured } from './db/connect.js';
 import { createApp } from './app.js';
 
 const { missingRequired, missingOptional } = checkEnv();
 
 if (missingRequired.length > 0) {
-  console.error('\nCannot start: required environment variables are missing.\n');
+  console.error('\nCannot start: required environment variables are missing or too weak.\n');
   for (const [key, why] of missingRequired) {
     console.error(`  ${key}  - ${why}`);
   }
@@ -24,6 +24,8 @@ for (const [key, why] of missingOptional) {
 // the frontend falls back to its local data, which is far more useful than a
 // server that refuses to start.
 if (isConfigured) {
+  // Server-side log only; nothing here reaches a client.
+  // nosemgrep: ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
   try {
     await connectDB();
     console.log('[db] connected');
@@ -36,7 +38,11 @@ const app = createApp();
 const server = app.listen(PORT, () => {
   console.log(`\n  Attri Nexus API  ·  ${NODE_ENV}`);
   console.log(`  Health Check:  http://localhost:${PORT}/api/health`);
-  console.log(`  Swagger UI:    http://localhost:${PORT}/api/docs\n`);
+  console.log(
+    API_DOCS_ENABLED
+      ? `  Swagger UI:    http://localhost:${PORT}/api/docs\n`
+      : '  Swagger UI:    off in production (set ENABLE_API_DOCS=true to serve it)\n'
+  );
 });
 
 // Without this the process ignores container stop signals and gets SIGKILLed

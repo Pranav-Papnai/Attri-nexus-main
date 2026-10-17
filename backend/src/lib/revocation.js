@@ -1,15 +1,22 @@
 import crypto from 'node:crypto';
 import { RevokedToken } from '../db/models/RevokedToken.js';
 
-// Fast in-memory cache to ensure token revocation checks execute in ~0ms
-// without imposing database round-trips on every authenticated request.
+// In-memory cache so a revoked token is rejected without a database round
+// trip on this instance. Bounded: expired entries are pruned when it grows.
 const memoryCache = new Map(); // tokenHash -> expiresAtMs
+const MAX_CACHE_ENTRIES = 10_000;
 
 export function hashToken(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
 }
 
-export function revokeTokenMemory(tokenHash, expiresAtMs) {
+function remember(tokenHash, expiresAtMs) {
+  if (memoryCache.size >= MAX_CACHE_ENTRIES) {
+    const now = Date.now();
+    for (const [hash, exp] of memoryCache) {
+      if (exp <= now) memoryCache.delete(hash);
+    }
+  }
   memoryCache.set(tokenHash, expiresAtMs);
 }
 
@@ -19,9 +26,8 @@ export function revokeTokenMemory(tokenHash, expiresAtMs) {
 export async function revokeToken(token, expiresAt) {
   const tokenHash = hashToken(token);
   const expiresAtDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
-  const expiresAtMs = expiresAtDate.getTime();
 
-  revokeTokenMemory(tokenHash, expiresAtMs);
+  remember(tokenHash, expiresAtDate.getTime());
 
   try {
     await RevokedToken.create({ tokenHash, expiresAt: expiresAtDate });
@@ -34,36 +40,29 @@ export async function revokeToken(token, expiresAt) {
 }
 
 /**
- * Checks whether a token has been revoked.
+ * Checks whether a token has been revoked. Fails closed: if the revocation
+ * list cannot be read, the token is treated as revoked, because a logged-out
+ * token must never slip through during a database hiccup.
  */
 export async function isTokenRevoked(token) {
   if (!token) return false;
   const tokenHash = hashToken(token);
   const now = Date.now();
 
-  // 1. Check in-memory cache (< 0.05ms)
   if (memoryCache.has(tokenHash)) {
-    const expiresAt = memoryCache.get(tokenHash);
-    if (expiresAt > now) {
-      return true;
-    }
+    if (memoryCache.get(tokenHash) > now) return true;
     memoryCache.delete(tokenHash);
   }
 
-  // 2. Fallback to MongoDB check (handles serverless instances / restarts)
   try {
-    const doc = await RevokedToken.findOne({
-      tokenHash,
-      expiresAt: { $gt: new Date() }
-    }).lean();
-
+    const doc = await RevokedToken.findOne({ tokenHash, expiresAt: { $gt: new Date() } }).lean();
     if (doc) {
-      memoryCache.set(tokenHash, new Date(doc.expiresAt).getTime());
+      remember(tokenHash, new Date(doc.expiresAt).getTime());
       return true;
     }
-  } catch {
-    // If DB check fails, fail-safe to memoryCache
+    return false;
+  } catch (err) {
+    console.error('Revocation check failed; rejecting token:', err.message);
+    return true;
   }
-
-  return false;
 }

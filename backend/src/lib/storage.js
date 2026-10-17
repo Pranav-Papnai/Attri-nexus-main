@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { v2 as cloudinary } from 'cloudinary';
 import {
   CLOUDINARY_URL,
@@ -34,7 +35,7 @@ export function buildImagePath(fileName, contentType) {
     .replace(/[^a-z0-9]/g, '');
 
   const ext = fromType || fromName || 'jpg';
-  const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const unique = `${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
   return `products/${unique}.${ext}`;
 }
 

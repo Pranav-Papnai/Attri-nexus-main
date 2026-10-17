@@ -76,7 +76,7 @@ export async function notifyNewInquiry(inquiry) {
 export async function sendPasswordResetEmail({ email, name, otp }) {
   if (!RESEND_API_KEY) return { sent: false, reason: 'not configured' };
 
-  const subject = `Attri Nexus Security - Password Reset Code: ${otp}`;
+  const subject = `Attri Nexus Security - Password Reset Code`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; background-color: #0C1015; color: #FFFFFF; border-radius: 16px; border: 1px solid rgba(197, 160, 89, 0.3);">
       <div style="text-align: center; margin-bottom: 24px;">

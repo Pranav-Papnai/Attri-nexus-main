@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { Product } from '../db/models/Product.js';
-import { requireAdmin } from '../middleware/requireAdmin.js';
+import { requireAdmin, requireSuperAdmin } from '../middleware/requireAdmin.js';
+import { audit } from '../lib/audit.js';
 import { asyncHandler, isValidationError, validationMessage } from '../middleware/errors.js';
 
 const router = Router();
@@ -67,7 +68,7 @@ router.get(
       const rows = await Product.find().sort({ createdAt: 1 }).limit(MAX_PRODUCTS).lean();
       const data = rows.map(toApi);
       cachedPayload = { success: true, data };
-      const hash = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
+      const hash = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
       cachedETag = `"${hash}"`;
       cacheTimestamp = Date.now();
     }
@@ -92,11 +93,13 @@ router.get(
   })
 );
 
-// POST /api/products - admin upsert. The id is supplied by the app, so create
-// and update arrive as the same request.
+// POST /api/products - Super Admin upsert. The id is supplied by the app, so
+// create and update arrive as the same request. Catalogue changes are limited
+// to Super Admins; Commercial Admins handle enquiries and quotes.
 router.post(
   '/',
   requireAdmin,
+  requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const { id } = req.body || {};
     if (!id || typeof id !== 'string') {
@@ -119,6 +122,7 @@ router.post(
 
       if (updated) {
         invalidateProductsCache();
+        audit(req, 'product.updated', { targetType: 'product', targetId: id });
         res.status(200).json({ success: true, data: toApi(updated) });
         return;
       }
@@ -128,6 +132,7 @@ router.post(
       // because update validators skip paths that are absent.
       const created = await new Product({ _id: id, ...fields }).save();
       invalidateProductsCache();
+      audit(req, 'product.created', { targetType: 'product', targetId: id });
       res.status(200).json({ success: true, data: toApi(created.toObject()) });
     } catch (err) {
       // A concurrent create for the same id lost the race - it is an update.
@@ -156,10 +161,11 @@ router.post(
   })
 );
 
-// DELETE /api/products/:id - admin only.
+// DELETE /api/products/:id - Super Admin only.
 router.delete(
   '/:id',
   requireAdmin,
+  requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const deleted = await Product.findByIdAndDelete(req.params.id).lean();
     if (!deleted) {
@@ -167,6 +173,7 @@ router.delete(
       return;
     }
     invalidateProductsCache();
+    audit(req, 'product.deleted', { targetType: 'product', targetId: req.params.id });
     res.status(200).json({ success: true });
   })
 );

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { requireAdmin } from '../middleware/requireAdmin.js';
+import { requireAdmin, requireSuperAdmin } from '../middleware/requireAdmin.js';
+import { audit } from '../lib/audit.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 import {
   isStorageConfigured,
@@ -38,6 +39,7 @@ function sniffImageType(buffer) {
 router.post(
   '/',
   requireAdmin,
+  requireSuperAdmin,
   uploadLimiter,
   asyncHandler(async (req, res) => {
     if (!isStorageConfigured()) {
@@ -92,6 +94,7 @@ router.post(
 
     // The sniffed type wins over the declared one when they disagree.
     const url = await uploadProductImage({ buffer, fileName, contentType: detected });
+    audit(req, 'upload.image', { meta: { bytes: buffer.length, type: detected } });
     res.status(200).json({ success: true, url });
   })
 );
