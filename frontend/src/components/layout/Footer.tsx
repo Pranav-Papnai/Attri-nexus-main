@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BUSINESS_CONFIG } from '@/constants/business';
-import { Sparkles, ArrowRight, ShieldCheck, FileCheck2, Globe2, Scale } from 'lucide-react';
+import { Sparkles, ArrowRight, Globe2, Scale } from 'lucide-react';
 import { useEnquiryModal } from '../../context/EnquiryModalContext';
 
 export const Footer: React.FC = () => {
@@ -227,20 +227,36 @@ export const Footer: React.FC = () => {
       {/* Institutional Compliance & Certification Strip */}
       <div className="border-t border-slate-800 py-6 bg-slate-950/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center sm:text-left">
-            <div className="flex flex-col space-y-1.5 justify-center sm:justify-start">
-              <div className="flex items-center space-x-2.5 justify-center sm:justify-start">
-                <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-xs text-slate-400 font-medium">FSSAI Certified Purity</span>
+          <div className="flex flex-col items-center justify-center">
+            <h3 className="text-xs uppercase tracking-[0.14em] text-slate-400 font-semibold mb-6">
+              Institutional Compliance & Certification
+            </h3>
+            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+              {/* FSSAI Logo & License */}
+              <div className="flex flex-col items-center space-y-2">
+                <img
+                  src="/logos/fssai.png"
+                  alt="FSSAI Certified Purity"
+                  className="h-16 w-auto object-contain"
+                  title="FSSAI License: 12726999000516"
+                />
+                <span className="text-[10px] text-slate-500 text-center font-medium">
+                  Lic. No: 12726999000516
+                </span>
               </div>
-              <span className="text-[10px] text-slate-500 pl-6">Lic. No: 12726999000516</span>
-            </div>
-            <div className="flex flex-col space-y-1.5 justify-center sm:justify-start">
-              <div className="flex items-center space-x-2.5 justify-center sm:justify-start">
-                <FileCheck2 className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-xs text-slate-400 font-medium">GST & Commercial Compliant</span>
+
+              {/* GST Logo & ID */}
+              <div className="flex flex-col items-center space-y-2">
+                <img
+                  src="/logos/gst.png"
+                  alt="GST Compliant"
+                  className="h-16 w-auto object-contain"
+                  title="GST ID: 09ACOFA8324M1ZS"
+                />
+                <span className="text-[10px] text-slate-500 text-center font-medium">
+                  GST ID: 09ACOFA8324M1ZS
+                </span>
               </div>
-              <span className="text-[10px] text-slate-500 pl-6">GST ID: 09ACOFA8324M1ZS</span>
             </div>
           </div>
         </div>
