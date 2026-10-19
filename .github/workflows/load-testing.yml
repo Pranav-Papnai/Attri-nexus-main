@@ -1,0 +1,62 @@
+name: k6 Load Testing
+
+on:
+  schedule:
+    # Run load tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Test scenario to run'
+        required: true
+        default: 'load'
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - spike
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    name: k6 Load Test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup k6
+        run: |
+          apt-get update
+          apt-get install -y gnupg software-properties-common python3
+          add-apt-repository "ppa:loadimpact/k6"
+          apt-get update
+          apt-get install -y k6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: cd backend && npm install
+
+      - name: Start backend server
+        run: cd backend && npm start &
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Wait for server to start
+        run: npx wait-on http://localhost:3000/api/products --timeout 30000
+
+      - name: Run k6 Load Test
+        run: k6 run backend/loadtest.js --scenario ${{ github.event.inputs.scenario || 'load' }}
+        env:
+          BASE_URL: 'http://localhost:3000'
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-results-${{ github.run_id }}
+          path: results/

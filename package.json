@@ -12,6 +12,12 @@
     "dev:all": "concurrently -n api,web -c cyan,magenta \"npm run dev\" \"npm run dev:web\"",
     "seed:admin": "node backend/scripts/seed-admin.js",
     "test": "npm --prefix backend test",
+    "test:smoke": "k6 run backend/loadtest.js --scenario smoke",
+    "test:load": "k6 run backend/loadtest.js --scenario load",
+    "test:stress": "k6 run backend/loadtest.js --scenario stress",
+    "test:spike": "k6 run backend/loadtest.js --scenario spike",
+    "test:lighthouse": "lhci autorun --config=lighthouserc.json",
+    "test:all": "npm run test && npm run test:lighthouse",
     "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
   },
   "devDependencies": {

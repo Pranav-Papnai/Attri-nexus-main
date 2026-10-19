@@ -1,0 +1,47 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    name: Lighthouse CI
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm install && npm run build
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.11.x
+
+      - name: Start preview server
+        run: cd frontend && npm run preview &
+        env:
+          VITE_BACKEND_API_URL: http://localhost:3000/api
+
+      - name: Wait for server to start
+        run: npx wait-on http://localhost:4173 --timeout 30000
+
+      - name: Run Lighthouse CI
+        run: lhci autorun --config=lighthouserc.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
