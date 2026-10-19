@@ -1,87 +1,260 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main Pages -->
   <url>
-    <loc>https://attrinexus.com/</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/about</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://attrinexus.com/products</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/products</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/products/attri-traditional-basmati</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/about</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/why-us</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/quality</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/bulk-enquiry</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/products/attri-sona-masoori</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/gallery</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/contact</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/faq</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Rice Products (10) -->
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/pusa-1121-basmati-rice</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/products/attri-classic-ir64</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/products/pusa-1509-basmati-rice</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/quality</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://attrinexus.com/why-us</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://attrinexus.com/bulk-enquiry</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/products/pusa-1718-1885-basmati-rice</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/gallery</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://attri-nexus-web.vercel.app/products/ir-64-rice</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/contact</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://attri-nexus-web.vercel.app/products/swarna-rice</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/faq</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-sona-masoori</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/privacy-policy</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-ponni-rice</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-kolam-rice</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-jaya-boiled-rice</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Animal Feed Products (4) -->
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/soybean-meal-doc</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/rapeseed-meal-doc</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/corn-ddgs-distillers-grains</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/rice-ddgs-distillers-grains</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Pulses & Beans Products (6) -->
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/red-kidney-beans-rajma</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/dried-peas-green-yellow</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/black-eyed-beans-lobia</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/bold-kabuli-chickpeas</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-select-toor-dal</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/red-lentils-masoor-dal</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/black-matpe-urad-bean</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/green-mung-beans-whole</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Wheat & Flour Products (4) -->
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-pure-sharbati-flour</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-lokwan-flour</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-malviya-flour</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-durum-flour</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-mp-sharbati-wheat-grain</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-lokwan-wheat</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-malviya-wheat</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/products/attri-durum-wheat</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Legal Pages -->
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/privacy-policy</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.50</priority>
   </url>
   <url>
-    <loc>https://attrinexus.com/terms</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://attri-nexus-web.vercel.app/terms</loc>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.50</priority>
+  </url>
+  <url>
+    <loc>https://attri-nexus-web.vercel.app/cookie-policy</loc>
+    <lastmod>2026-10-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.50</priority>
   </url>
 </urlset>
