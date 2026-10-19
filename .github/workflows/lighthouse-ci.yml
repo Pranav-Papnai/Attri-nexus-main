@@ -31,9 +31,24 @@ jobs:
       - name: Start preview server
         run: |
           cd frontend
-          timeout 120 npm run preview > /tmp/preview.log 2>&1 &
-          sleep 3
-          if ! curl -s http://localhost:4173 > /dev/null; then
+          # Kill any process using port 4173
+          lsof -ti:4173 | xargs kill -9 2>/dev/null || true
+          sleep 1
+
+          # Start preview server
+          timeout 120 npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &
+
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:4173 > /dev/null 2>&1; then
+              echo "Preview server is ready on port 4173"
+              break
+            fi
+            echo "Waiting for preview server... ($i/30)"
+            sleep 1
+          done
+
+          if ! curl -s http://127.0.0.1:4173 > /dev/null 2>&1; then
             echo "Preview server failed to start"
             cat /tmp/preview.log
             exit 1
