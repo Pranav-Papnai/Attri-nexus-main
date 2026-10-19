@@ -29,14 +29,17 @@ jobs:
         run: npm install -g @lhci/cli@0.11.x
 
       - name: Start preview server
-        run: cd frontend && npm run preview > /tmp/preview.log 2>&1 &
+        run: |
+          cd frontend
+          timeout 120 npm run preview > /tmp/preview.log 2>&1 &
+          sleep 3
+          if ! curl -s http://localhost:4173 > /dev/null; then
+            echo "Preview server failed to start"
+            cat /tmp/preview.log
+            exit 1
+          fi
         env:
           VITE_BACKEND_API_URL: http://localhost:3000/api
-
-      - name: Wait for server to start
-        run: |
-          npx wait-on http://localhost:4173 --timeout 30000
-          sleep 2
 
       - name: Run Lighthouse CI
         run: lhci autorun --config=lighthouserc.json
