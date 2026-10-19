@@ -29,15 +29,19 @@ jobs:
         run: npm install -g @lhci/cli@0.11.x
 
       - name: Start preview server
-        run: cd frontend && npm run preview &
+        run: cd frontend && npm run preview > /tmp/preview.log 2>&1 &
         env:
           VITE_BACKEND_API_URL: http://localhost:3000/api
 
       - name: Wait for server to start
-        run: npx wait-on http://localhost:4173 --timeout 30000
+        run: |
+          npx wait-on http://localhost:4173 --timeout 30000
+          sleep 2
 
       - name: Run Lighthouse CI
         run: lhci autorun --config=lighthouserc.json
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Upload results
         if: always()
