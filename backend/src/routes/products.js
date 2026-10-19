@@ -8,7 +8,7 @@ import { asyncHandler, isValidationError, validationMessage } from '../middlewar
 const router = Router();
 
 const MAX_PRODUCTS = 1000;
-const CACHE_TTL_MS = 60 * 1000; // 60-second in-memory catalog cache
+const CACHE_TTL_MS = 300 * 1000; // 300-second (5-minute) in-memory catalog cache for 80% fewer DB queries
 
 let cachedPayload = null;
 let cachedETag = null;
@@ -75,6 +75,8 @@ router.get(
 
     res.setHeader('ETag', cachedETag);
     res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    res.setHeader('Vary', 'Accept-Encoding'); // Enable compression-aware caching
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     const ifNoneMatch = req.headers['if-none-match'];
     const isEtagMatch = Boolean(

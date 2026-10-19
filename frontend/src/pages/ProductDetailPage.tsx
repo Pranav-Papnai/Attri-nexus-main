@@ -3,6 +3,7 @@ import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { PRODUCTS } from '@/constants/products';
 import { useEnquiryModal } from '../context/EnquiryModalContext';
+import { useProductSchema, usePageMeta, useCanonicalURL } from '../hooks/useSchemaMarkup';
 import { ProductCard } from '../components/ui/ProductCard';
 import { Lightbox } from '../components/ui/Lightbox';
 import { getWhatsAppLink, BUSINESS_CONFIG } from '@/constants/business';
@@ -233,6 +234,29 @@ export const ProductDetailPage: React.FC = () => {
     if (isLoading) return null;
     return <Navigate to="/products" replace />;
   }
+
+  // Inject product schema for SEO
+  useProductSchema({
+    name: product.name,
+    slug: product.slug,
+    shortDescription: product.shortDescription,
+    image: product.image,
+    brandLine: product.brandLine,
+    category: product.category,
+    variety: product.variety
+  });
+
+  // Update page meta tags
+  usePageMeta({
+    title: `${product.name} - Attri Nexus | Premium Agro Commodities`,
+    description: product.shortDescription,
+    keywords: `${product.name}, ${product.category}, ${product.variety || ''}, agro commodities, premium grains, bulk supplier`,
+    image: `https://attri-nexus-web.vercel.app${product.image}`,
+    url: `https://attri-nexus-web.vercel.app/products/${product.slug}`
+  });
+
+  // Set canonical URL
+  useCanonicalURL(`https://attri-nexus-web.vercel.app/products/${product.slug}`);
 
   const relatedProducts = getRelated(product.slug, 3);
   const packSizes = product.packSizes && product.packSizes.length > 0 ? product.packSizes : ['5 Kg Handle Bag', '10 Kg Master Bag', '25 Kg Standard Bag', '50 Kg Heavy Commercial'];

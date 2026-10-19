@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { BUSINESS_CONFIG, getWhatsAppLink } from '@/constants/business';
 import { useProducts } from '../context/ProductsContext';
+import { usePageMeta, useFAQSchema, useCanonicalURL } from '../hooks/useSchemaMarkup';
 import { WHY_US_PILLARS } from '@/constants/whyUs';
 import { FAQS } from '@/constants/faqs';
 import { TrustStrip } from '../components/ui/TrustStrip';
@@ -72,6 +73,23 @@ export const HomePage: React.FC = () => {
   const [activeShowcaseCategory, setActiveShowcaseCategory] = useState<string>('All');
   const { products } = useProducts();
   const { openEnquiryModal } = useEnquiryModal();
+
+  // SEO: Set homepage meta tags
+  usePageMeta({
+    title: 'Attri Nexus | Premium Agro Commodities & Trade Platform',
+    description: 'India\'s trusted supplier and exporter of Premium Rice, Livestock Feed, Wheat & Atta, and Beans & Pulses. Institutional-grade bulk commodities for global markets.',
+    keywords: 'agro commodities, premium rice, basmati rice, animal feed, cattle feed, wheat flour, chakki atta, beans, pulses, Indian grain exporter, bulk commodity supplier',
+    url: 'https://attri-nexus-web.vercel.app'
+  });
+
+  // SEO: Set canonical URL
+  useCanonicalURL('https://attri-nexus-web.vercel.app');
+
+  // SEO: Add FAQ schema
+  useFAQSchema(FAQS.map(faq => ({
+    question: faq.question,
+    answer: faq.answer
+  })));
 
   // Carousel timer - 5 seconds per slide
   useEffect(() => {

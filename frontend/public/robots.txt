@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
 
-Sitemap: https://attrinexus.com/sitemap.xml
+# Crawl-delay for respectful indexing
+Crawl-delay: 1
+
+# Sitemaps for Google and Bing
+Sitemap: https://attri-nexus-web.vercel.app/sitemap.xml
