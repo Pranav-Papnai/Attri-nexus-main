@@ -235,7 +235,7 @@ export const Footer: React.FC = () => {
               {/* FSSAI Logo & License */}
               <div className="flex flex-col items-center space-y-2">
                 <img
-                  src="/logos/fssai.png"
+                  src="/logos/fssai.svg"
                   alt="FSSAI Certified Purity"
                   className="h-16 w-auto object-contain"
                   title="FSSAI License: 12726999000516"
@@ -248,7 +248,7 @@ export const Footer: React.FC = () => {
               {/* GST Logo & ID */}
               <div className="flex flex-col items-center space-y-2">
                 <img
-                  src="/logos/gst.png"
+                  src="/logos/gst.svg"
                   alt="GST Compliant"
                   className="h-16 w-auto object-contain"
                   title="GST ID: 09ACOFA8324M1ZS"
