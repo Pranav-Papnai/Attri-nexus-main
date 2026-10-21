@@ -36,12 +36,12 @@ export const BUSINESS_CONFIG: BusinessConfig = {
   // Operational Hours
   businessHours: "Monday – Saturday: 9:00 AM – 7:30 PM (IST)",
 
-  // Social Links
+  // Social Links - leave empty until the account exists; the footer icon stays unclickable while empty
   socialLinks: {
-    instagram: "https://instagram.com/attrinexus",
-    facebook: "https://facebook.com/attrinexus",
-    linkedin: "https://linkedin.com/company/attrinexus",
-    youtube: "https://youtube.com/@attrinexus"
+    instagram: "",
+    facebook: "",
+    linkedin: "",
+    youtube: ""
   }
 };
 

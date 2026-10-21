@@ -3,6 +3,8 @@
  * Generates JSON-LD structured data for Organization, Product, LocalBusiness, etc.
  */
 
+import { BUSINESS_CONFIG } from '@/constants/business';
+
 const SITE_URL = 'https://attri-nexus-web.vercel.app';
 const BUSINESS_NAME = 'Attri Nexus';
 const BUSINESS_DESCRIPTION = 'India\'s trusted supplier and exporter of Premium Rice, Livestock Feed, Wheat & Atta, and Beans & Pulses';
@@ -35,12 +37,7 @@ export const organizationSchema = {
     'email': 'attrinexus@gmail.com',
     'areaServed': ['IN', 'Global']
   },
-  'sameAs': [
-    'https://instagram.com/attrinexus',
-    'https://facebook.com/attrinexus',
-    'https://linkedin.com/company/attrinexus',
-    'https://youtube.com/@attrinexus'
-  ],
+  'sameAs': Object.values(BUSINESS_CONFIG.socialLinks).filter(Boolean),
   'foundingDate': '2024-01-01',
   'knowsAbout': [
     'Basmati Rice Export',
