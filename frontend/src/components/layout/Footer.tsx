@@ -234,11 +234,14 @@ export const Footer: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
               {/* FSSAI Logo & License */}
               <div className="flex flex-col items-center space-y-2">
-                <div className="rounded-xl overflow-hidden bg-white/95 p-2">
+                <div className="h-20 flex items-center justify-center rounded-xl bg-white px-4 shadow-sm">
                   <img
                     src="/logos/fssai.png"
                     alt="FSSAI Certified Purity"
-                    className="h-14 w-auto"
+                    width={176}
+                    height={94}
+                    loading="lazy"
+                    className="h-12 w-auto"
                     title="FSSAI License: 12726999000516"
                   />
                 </div>
@@ -249,11 +252,14 @@ export const Footer: React.FC = () => {
 
               {/* GST Logo & ID */}
               <div className="flex flex-col items-center space-y-2">
-                <div className="rounded-2xl overflow-hidden bg-white/95 p-2">
+                <div className="h-20 flex items-center justify-center rounded-xl bg-white px-4 shadow-sm">
                   <img
-                    src="/logos/gst.png"
+                    src="/logos/gst.svg"
                     alt="GST Compliant"
-                    className="h-14 w-auto"
+                    width={64}
+                    height={64}
+                    loading="lazy"
+                    className="h-16 w-16"
                     title="GST ID: 09ACOFA8324M1ZS"
                   />
                 </div>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="GST - Goods and Services Tax">
+  <defs>
+    <path id="top" d="M 32 100 A 68 68 0 0 1 168 100"/>
+    <path id="bottom" d="M 26 100 A 74 74 0 0 0 174 100"/>
+  </defs>
+  <path d="M 100.00 2.00 L 110.30 8.58 L 121.81 4.46 L 130.39 13.16 L 142.52 11.71 L 148.95 22.10 L 161.10 23.38 L 165.05 34.95 L 176.62 38.90 L 177.90 51.05 L 188.29 57.48 L 186.84 69.61 L 195.54 78.19 L 191.42 89.70 L 198.00 100.00 L 191.42 110.30 L 195.54 121.81 L 186.84 130.39 L 188.29 142.52 L 177.90 148.95 L 176.62 161.10 L 165.05 165.05 L 161.10 176.62 L 148.95 177.90 L 142.52 188.29 L 130.39 186.84 L 121.81 195.54 L 110.30 191.42 L 100.00 198.00 L 89.70 191.42 L 78.19 195.54 L 69.61 186.84 L 57.48 188.29 L 51.05 177.90 L 38.90 176.62 L 34.95 165.05 L 23.38 161.10 L 22.10 148.95 L 11.71 142.52 L 13.16 130.39 L 4.46 121.81 L 8.58 110.30 L 2.00 100.00 L 8.58 89.70 L 4.46 78.19 L 13.16 69.61 L 11.71 57.48 L 22.10 51.05 L 23.38 38.90 L 34.95 34.95 L 38.90 23.38 L 51.05 22.10 L 57.48 11.71 L 69.61 13.16 L 78.19 4.46 L 89.70 8.58 L 100.00 2.00 Z" fill="#E4262C" stroke="#E4262C" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="100" cy="100" r="84" fill="none" stroke="#fff" stroke-width="2.5"/>
+  <circle cx="100" cy="100" r="50" fill="#fff"/>
+  <circle cx="100" cy="100" r="44" fill="none" stroke="#E4262C" stroke-width="2.5"/>
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="12" fill="#fff" letter-spacing="0.6">
+    <textPath href="#top" startOffset="50%" text-anchor="middle">GOODS AND SERVICES TAX</textPath>
+  </text>
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="12" fill="#fff" letter-spacing="0.6">
+    <textPath href="#bottom" startOffset="50%" text-anchor="middle">GOODS AND SERVICES TAX</textPath>
+  </text>
+  <polygon points="23.00,94.00 24.59,97.82 28.71,98.15 25.57,100.83 26.53,104.85 23.00,102.70 19.47,104.85 20.43,100.83 17.29,98.15 21.41,97.82" fill="#fff"/>
+  <polygon points="177.00,94.00 178.59,97.82 182.71,98.15 179.57,100.83 180.53,104.85 177.00,102.70 173.47,104.85 174.43,100.83 171.29,98.15 175.41,97.82" fill="#fff"/>
+  <text x="100" y="112" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="#E4262C" text-anchor="middle">GST</text>
+</svg>
