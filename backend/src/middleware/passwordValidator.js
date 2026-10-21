@@ -3,7 +3,7 @@
  * Requirements: Min 12 chars, uppercase, lowercase, number, special char
  */
 
-function validatePassword(password) {
+export function validatePassword(password) {
   const rules = [
     {
       regex: /^.{12,}$/,
@@ -44,7 +44,7 @@ function validatePassword(password) {
  * Get password strength score (for frontend feedback)
  * Returns: { score: 0-5, feedback: string }
  */
-function getPasswordStrength(password) {
+export function getPasswordStrength(password) {
   let score = 0;
   const feedback = [];
 
@@ -71,8 +71,3 @@ function getPasswordStrength(password) {
     isValid: score >= 5
   };
 }
-
-module.exports = {
-  validatePassword,
-  getPasswordStrength
-};
