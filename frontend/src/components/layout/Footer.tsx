@@ -250,7 +250,7 @@ export const Footer: React.FC = () => {
                 <img
                   src="/logos/gst.png"
                   alt="GST Compliant"
-                  className="h-16 w-auto object-contain"
+                  className="h-16 w-auto object-contain rounded-full shadow-sm"
                   title="GST ID: 09ACOFA8324M1ZS"
                 />
                 <span className="text-[10px] text-slate-500 text-center font-medium">
