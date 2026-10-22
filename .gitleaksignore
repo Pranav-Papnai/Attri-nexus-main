@@ -1,0 +1,4 @@
+# Reviewed false positives. Each entry is a finding fingerprint (commit:file:rule:line).
+# Fake password used only against the in-memory test database.
+6a52a1ffdf7a4cfe76ed5a44b5fb83565225f75a:backend/test/api.test.js:generic-api-key:239
+6a52a1ffdf7a4cfe76ed5a44b5fb83565225f75a:backend/test/api.test.js:generic-api-key:246
