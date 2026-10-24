@@ -25,6 +25,7 @@ import {
 } from '@/services/api/auth';
 import { SecurityPanel } from '../../components/admin/SecurityPanel';
 import { AuditLogPanel } from '../../components/admin/AuditLogPanel';
+import { ProductEnquiryTable, type ProductEnquiryRow } from '../../components/admin/ProductEnquiryTable';
 import { downloadCsv } from '../../utils/csv';
 import {
   ExecutiveDonutChart,
@@ -190,6 +191,8 @@ export const AdminDashboardPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState<string>('all');
+  // A product id, '__unlinked' for enquiries that name no catalogue product, or 'all'.
+  const [dashboardProductFilter, setDashboardProductFilter] = useState<string>('all');
 
   // Manage Products Filter States
   const [manageCategoryFilter, setManageCategoryFilter] = useState<string>('all');
@@ -318,7 +321,7 @@ export const AdminDashboardPage: React.FC = () => {
   // Reset to page 1 whenever the visible lead set changes shape
   useEffect(() => {
     setInquiryPage(1);
-  }, [searchQuery, statusFilter, sourceFilter, dashboardCategoryFilter]);
+  }, [searchQuery, statusFilter, sourceFilter, dashboardCategoryFilter, dashboardProductFilter]);
 
   // Filtered Inquiries for Live Table View
   const filteredInquiries = useMemo(() => {
@@ -334,10 +337,12 @@ export const AdminDashboardPage: React.FC = () => {
       const matchesStatus = statusFilter === 'all' || inq.status === statusFilter;
       const matchesSource = sourceFilter === 'all' || inq.source === sourceFilter;
       const matchesCategory = dashboardCategoryFilter === 'all' || getInquiryCategory(inq) === dashboardCategoryFilter;
+      const linkedProductId = findProductForInquiry(inq)?.id ?? '__unlinked';
+      const matchesProduct = dashboardProductFilter === 'all' || linkedProductId === dashboardProductFilter;
 
-      return matchesSearch && matchesStatus && matchesSource && matchesCategory;
+      return matchesSearch && matchesStatus && matchesSource && matchesCategory && matchesProduct;
     });
-  }, [inquiries, searchQuery, statusFilter, sourceFilter, dashboardCategoryFilter, products]);
+  }, [inquiries, searchQuery, statusFilter, sourceFilter, dashboardCategoryFilter, dashboardProductFilter, products]);
 
   const inquiryTotalPages = Math.max(1, Math.ceil(filteredInquiries.length / INQUIRY_PAGE_SIZE));
 
@@ -427,6 +432,37 @@ export const AdminDashboardPage: React.FC = () => {
     });
   }, [products, inquiries]);
 
+  // Enquiry counts per product for the selected category (or every product)
+  const productEnquiryRows = useMemo<ProductEnquiryRow[]>(() => {
+    const scope = dashboardCategoryFilter;
+    const emptyCounts = { total: 0, new: 0, contacted: 0, quoted: 0, closed: 0, lastAt: '' };
+    const rows = new Map<string, ProductEnquiryRow>();
+    products
+      .filter((p) => scope === 'all' || normalizeCategory(p.category) === scope)
+      .forEach((p) => rows.set(p.id, { id: p.id, name: p.name, variety: p.variety, category: normalizeCategory(p.category), ...emptyCounts }));
+    const unlinked: ProductEnquiryRow = {
+      id: '__unlinked',
+      name: 'Not linked to a product',
+      variety: 'The enquiry did not name a catalogue product',
+      category: scope === 'all' ? '—' : scope,
+      ...emptyCounts
+    };
+
+    inquiries.forEach((inq) => {
+      if (scope !== 'all' && getInquiryCategory(inq) !== scope) return;
+      const prod = findProductForInquiry(inq);
+      const row = prod ? rows.get(prod.id) : unlinked;
+      if (!row) return;
+      row.total += 1;
+      row[inq.status] += 1;
+      if ((inq.created_at || '') > row.lastAt) row.lastAt = inq.created_at;
+    });
+
+    const list = [...rows.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+    if (unlinked.total > 0) list.push(unlinked);
+    return list;
+  }, [inquiries, products, dashboardCategoryFilter]);
+
   // Filtered Products for Manage Products Tab
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -482,93 +518,82 @@ export const AdminDashboardPage: React.FC = () => {
     };
   }, [inquiries, products]);
 
-  // Analytics Computation (7-Day Trend, Sources, Variety Demand)
+  // Every chart follows the selected category card: all categories, or one
+  // category broken down product by product.
   const analyticsData = useMemo(() => {
-    const days: { label: string; dateStr: string; count: number }[] = [];
-    const today = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const label = d.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' });
-      const count = inquiries.filter((inq) => inq.created_at?.slice(0, 10) === dateStr).length;
-      days.push({ label, dateStr, count });
-    }
-    const maxDayCount = Math.max(...days.map((d) => d.count), 4);
-
-    const bulkCount = inquiries.filter((i) => i.source === 'bulk').length;
-    const contactCount = inquiries.filter((i) => i.source === 'contact').length;
-    const modalCount = inquiries.filter((i) => i.source === 'modal' || i.source === 'quick_quote').length;
-    const totalInq = inquiries.length || 1;
-
-    const sources = [
-      { name: 'Bulk Trade Desk', count: bulkCount, pct: Math.round((bulkCount / totalInq) * 100), color: '#0D3B2E', barColor: 'bg-[#0D3B2E]' },
-      { name: 'Direct Contact Desk', count: contactCount, pct: Math.round((contactCount / totalInq) * 100), color: '#C5A059', barColor: 'bg-[#C5A059]' },
-      { name: 'Instant Quote Modal', count: modalCount, pct: Math.round((modalCount / totalInq) * 100), color: '#2563EB', barColor: 'bg-blue-600' }
-    ];
-
-    const categoryColors: Record<string, { hex: string; bg: string }> = {
-      'Attri Traditional Basmati': { hex: '#C5A059', bg: 'bg-[#C5A059]' },
-      'Attri Traditional': { hex: '#C5A059', bg: 'bg-[#C5A059]' },
-      'Attri Sona': { hex: '#0D3B2E', bg: 'bg-[#0D3B2E]' },
-      'Attri Sona Masoori': { hex: '#0D3B2E', bg: 'bg-[#0D3B2E]' },
-      'Attri Classic IR 64': { hex: '#2563EB', bg: 'bg-blue-600' },
-      'Attri Classic': { hex: '#2563EB', bg: 'bg-blue-600' },
-      'Bulk / HoReCa Catering': { hex: '#8B5CF6', bg: 'bg-purple-500' },
-      'General Basmati': { hex: '#D97706', bg: 'bg-amber-600' }
-    };
-
-    const prodCounts: Record<string, number> = {};
-    inquiries.forEach((inq) => {
-      const pName = inq.product_id || 'General Basmati';
-      prodCounts[pName] = (prodCounts[pName] || 0) + 1;
-    });
-
-    const categoryList = Object.entries(prodCounts)
-      .map(([name, count]) => {
-        const colorObj = categoryColors[name] || { hex: '#C5A059', bg: 'bg-[#C5A059]' };
-        return {
-          name,
-          count,
-          pct: Math.round((count / totalInq) * 100),
-          color: colorObj.hex,
-          bg: colorObj.bg
-        };
-      })
-      .sort((a, b) => b.count - a.count);
+    const scope = dashboardCategoryFilter;
+    const isScoped = scope !== 'all';
+    const scopedInquiries = isScoped ? inquiries.filter((i) => getInquiryCategory(i) === scope) : inquiries;
+    const scopedProducts = isScoped ? products.filter((p) => normalizeCategory(p.category) === scope) : products;
+    const scopedTotal = scopedInquiries.length;
+    const pctOf = (n: number) => Math.round((n / (scopedTotal || 1)) * 100);
 
     // 1. Enquiries received per day over the last 7 days
-    const trendData = days.map((d, i) => ({
-      label: i === 6 ? 'Today' : d.label.split(',')[0] || d.label,
-      value: d.count,
-      subLabel: d.dateStr
-    }));
+    const today = new Date();
+    const trendData = Array.from({ length: 7 }, (_, idx) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - idx));
+      const dateStr = d.toISOString().slice(0, 10);
+      return {
+        label: idx === 6 ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short' }),
+        value: scopedInquiries.filter((inq) => inq.created_at?.slice(0, 10) === dateStr).length,
+        subLabel: dateStr
+      };
+    });
 
-    // 2. Vertical Bar Chart: Products Count by Category
-    const riceCount = products.filter(p => normalizeCategory(p.category) === 'Rice').length;
-    const feedCount = products.filter(p => normalizeCategory(p.category) === 'Animal Feed').length;
-    const pulseCount = products.filter(p => normalizeCategory(p.category) === 'Beans and Pulses').length;
-    const wheatCount = products.filter(p => normalizeCategory(p.category) === 'Wheat').length;
+    // 2. Demand breakdown: per category, or per product inside the chosen category
+    const CATEGORY_META = [
+      { id: 'Rice', label: 'Rice & Basmati', shortLabel: 'Rice', color: '#2563EB', emoji: '🌾' },
+      { id: 'Animal Feed', label: 'Animal Feed & DDGS', shortLabel: 'Feed', color: '#F97316', emoji: '🐮' },
+      { id: 'Beans and Pulses', label: 'Beans & Pulses', shortLabel: 'Pulses', color: '#8B5CF6', emoji: '🫘' },
+      { id: 'Wheat', label: 'Wheat & Grains', shortLabel: 'Wheat', color: '#10B981', emoji: '🌾' }
+    ] as const;
+    const PRODUCT_COLORS = ['#2563EB', '#F97316', '#8B5CF6', '#10B981', '#EC4899', '#C5A059', '#0EA5E9', '#EF4444', '#14B8A6', '#6366F1', '#84CC16', '#0D3B2E'];
 
-    const barCategoryData = [
-      { label: 'Rice & Basmati', shortLabel: 'Rice', value: riceCount, color: '#2563EB', emoji: '🌾' },
-      { label: 'Animal Feed & DDGS', shortLabel: 'Feed', value: feedCount, color: '#F97316', emoji: '🐮' },
-      { label: 'Beans & Pulses', shortLabel: 'Pulses', value: pulseCount, color: '#8B5CF6', emoji: '🫘' },
-      { label: 'Wheat & Grains', shortLabel: 'Wheat', value: wheatCount, color: '#10B981', emoji: '🌾' }
-    ];
+    let barCategoryData: { label: string; shortLabel?: string; value: number; color: string; emoji?: string }[];
+    let donutCategoryData: { label: string; value: number; color: string }[];
 
-    // 3. Donut 1: Category Allocation
-    const donutCategoryData = barCategoryData.map(b => ({
-      label: b.label,
-      value: b.value,
-      color: b.color
-    }));
+    if (!isScoped) {
+      barCategoryData = CATEGORY_META.map((c) => ({
+        label: c.label,
+        shortLabel: c.shortLabel,
+        value: inquiries.filter((i) => getInquiryCategory(i) === c.id).length,
+        color: c.color,
+        emoji: c.emoji
+      }));
+      donutCategoryData = CATEGORY_META.map((c) => ({
+        label: c.label,
+        value: products.filter((p) => normalizeCategory(p.category) === c.id).length,
+        color: c.color
+      }));
+    } else {
+      const perProduct = new Map<string, number>();
+      let unlinked = 0;
+      scopedInquiries.forEach((inq) => {
+        const prod = findProductForInquiry(inq);
+        if (prod) perProduct.set(prod.id, (perProduct.get(prod.id) || 0) + 1);
+        else unlinked += 1;
+      });
+      const rows = scopedProducts
+        .map((p, idx) => ({
+          label: p.name,
+          shortLabel: p.variety || p.name,
+          value: perProduct.get(p.id) || 0,
+          color: PRODUCT_COLORS[idx % PRODUCT_COLORS.length]
+        }))
+        .sort((a, b) => b.value - a.value);
+      if (unlinked > 0) {
+        rows.push({ label: 'Enquiries not linked to a product', shortLabel: 'Unlinked', value: unlinked, color: '#94A3B8' });
+      }
+      barCategoryData = rows;
+      donutCategoryData = rows.map(({ label, value, color }) => ({ label, value, color }));
+    }
 
-    // 4. Donut 2: Lead Workflow & Status
-    const newInq = inquiries.filter(i => i.status === 'new').length;
-    const contInq = inquiries.filter(i => i.status === 'contacted').length;
-    const quotInq = inquiries.filter(i => i.status === 'quoted').length;
-    const closInq = inquiries.filter(i => i.status === 'closed').length;
+    // 3. Lead workflow & status
+    const newInq = scopedInquiries.filter((i) => i.status === 'new').length;
+    const contInq = scopedInquiries.filter((i) => i.status === 'contacted').length;
+    const quotInq = scopedInquiries.filter((i) => i.status === 'quoted').length;
+    const closInq = scopedInquiries.filter((i) => i.status === 'closed').length;
 
     const donutStatusData = [
       { label: 'Action Required (New)', value: newInq, color: '#F59E0B' },
@@ -577,62 +602,54 @@ export const AdminDashboardPage: React.FC = () => {
       { label: 'Secured Contracts', value: closInq, color: '#10B981' }
     ];
 
-    // 5. Donut 3: Export Packaging Breakdown
-    const packagingCounts = {
-      '50kg Bulk Commercial': 0,
-      '25kg Master Bag': 0,
-      '10kg Master Pack': 0,
-      '1kg-5kg Retail Pouches': 0
-    };
-    products.forEach(p => {
+    // 4. Export packaging across the products in scope
+    const packagingCounts = { bulk50: 0, bag25: 0, pack10: 0, retail: 0 };
+    scopedProducts.forEach((p) => {
       const sizes = (p.packSizes || []).join(' ').toLowerCase();
-      if (sizes.includes('50')) packagingCounts['50kg Bulk Commercial']++;
-      else if (sizes.includes('25')) packagingCounts['25kg Master Bag']++;
-      else if (sizes.includes('10')) packagingCounts['10kg Master Pack']++;
-      else packagingCounts['1kg-5kg Retail Pouches']++;
+      if (sizes.includes('50')) packagingCounts.bulk50++;
+      else if (sizes.includes('25')) packagingCounts.bag25++;
+      else if (sizes.includes('10')) packagingCounts.pack10++;
+      else packagingCounts.retail++;
     });
-
     const donutPackagingData = [
-      { label: '50kg Bulk Jute / Poly', value: packagingCounts['50kg Bulk Commercial'], color: '#0D3B2E' },
-      { label: '25kg Commercial Bag', value: packagingCounts['25kg Master Bag'], color: '#C5A059' },
-      { label: '10kg Master Pack', value: packagingCounts['10kg Master Pack'], color: '#2563EB' },
-      { label: '1kg-5kg Retail Pouches', value: packagingCounts['1kg-5kg Retail Pouches'], color: '#EC4899' }
+      { label: '50kg Bulk Jute / Poly', value: packagingCounts.bulk50, color: '#0D3B2E' },
+      { label: '25kg Commercial Bag', value: packagingCounts.bag25, color: '#C5A059' },
+      { label: '10kg Master Pack', value: packagingCounts.pack10, color: '#2563EB' },
+      { label: '1kg-5kg Retail Pouches', value: packagingCounts.retail, color: '#EC4899' }
     ];
 
-    // 6. Dual Comparison Horizontal Bar Chart
-    const activeProductsCount = products.filter(p => p.isActive !== false).length;
-    const totalProductsCount = products.length;
+    // 5. Fulfilment and catalogue readiness
+    const activeProductsCount = scopedProducts.filter((p) => p.isActive !== false).length;
     const dualBarData = [
       {
         label: 'Commercial Inquiries Handled',
         subLabel: 'Contacted, quoted or closed',
         value: contInq + quotInq + closInq,
-        total: inquiries.length,
+        total: scopedTotal,
         color: '#10B981'
       },
       {
         label: 'Active Export-Ready SKUs',
-        subLabel: `${activeProductsCount} of ${totalProductsCount} products active`,
+        subLabel: `${activeProductsCount} of ${scopedProducts.length} products active`,
         value: activeProductsCount,
-        total: totalProductsCount,
+        total: scopedProducts.length,
         color: '#F59E0B'
       }
     ];
 
-    // 7. Overview Strip Data
-    const overviewCategories = barCategoryData.map(b => ({
-      id: b.shortLabel,
-      name: b.label,
-      count: b.value,
-      pct: Math.round((b.value / (totalProductsCount || 1)) * 100),
-      color: b.color
-    }));
-    const overviewDivisions = sources.map(s => ({
-      name: s.name,
-      count: s.count,
-      pct: s.pct,
-      color: s.color
-    }));
+    // 6. Overview strip: catalogue spread stays company-wide; channels and statuses follow the scope
+    const overviewCategories = CATEGORY_META.map((c) => {
+      const count = products.filter((p) => normalizeCategory(p.category) === c.id).length;
+      return { id: c.shortLabel, name: c.label, count, pct: Math.round((count / (products.length || 1)) * 100), color: c.color };
+    });
+    const bulkCount = scopedInquiries.filter((i) => i.source === 'bulk').length;
+    const contactCount = scopedInquiries.filter((i) => i.source === 'contact').length;
+    const modalCount = scopedInquiries.filter((i) => i.source === 'modal' || i.source === 'quick_quote').length;
+    const overviewDivisions = [
+      { name: 'Bulk Trade Desk', count: bulkCount, pct: pctOf(bulkCount), color: '#0D3B2E' },
+      { name: 'Direct Contact Desk', count: contactCount, pct: pctOf(contactCount), color: '#C5A059' },
+      { name: 'Instant Quote Modal', count: modalCount, pct: pctOf(modalCount), color: '#2563EB' }
+    ];
     const overviewStatuses = [
       { label: 'New Action', count: newInq, color: '#F59E0B' },
       { label: 'In Contact', count: contInq, color: '#3B82F6' },
@@ -641,10 +658,10 @@ export const AdminDashboardPage: React.FC = () => {
     ];
 
     return {
-      days,
-      maxDayCount,
-      sources,
-      categoryList,
+      isScoped,
+      scopeLabel: CATEGORY_META.find((c) => c.id === scope)?.label || 'All Categories',
+      scopedTotal,
+      scopedProductCount: scopedProducts.length,
       trendData,
       barCategoryData,
       donutCategoryData,
@@ -655,7 +672,7 @@ export const AdminDashboardPage: React.FC = () => {
       overviewDivisions,
       overviewStatuses
     };
-  }, [inquiries, products]);
+  }, [inquiries, products, dashboardCategoryFilter]);
 
   // Handlers
   const handleStatusChange = async (id: string, newStatus: InquiryRecord['status']) => {
@@ -1558,12 +1575,12 @@ export const AdminDashboardPage: React.FC = () => {
                       Commercial Categories Performance
                     </h3>
                     <p className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-[#64748B]'}`}>
-                      Category-wise breakdown for Rice, Animal Feed, Beans & Pulses, and Wheat & Grains (Click card to filter leads)
+                      Click a category to see each of its products' enquiries, and to filter every chart and the leads table below
                     </p>
                   </div>
                   {dashboardCategoryFilter !== 'all' && (
                     <button
-                      onClick={() => setDashboardCategoryFilter('all')}
+                      onClick={() => { setDashboardCategoryFilter('all'); setDashboardProductFilter('all'); }}
                       className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 cursor-pointer self-start sm:self-auto transition-colors"
                     >
                       <span>Filter: {dashboardCategoryFilter}</span>
@@ -1579,7 +1596,7 @@ export const AdminDashboardPage: React.FC = () => {
                     return (
                       <div
                         key={cat.id}
-                        onClick={() => setDashboardCategoryFilter(isSelected ? 'all' : cat.id)}
+                        onClick={() => { setDashboardCategoryFilter(isSelected ? 'all' : cat.id); setDashboardProductFilter('all'); }}
                         className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
                           isSelected
                             ? 'ring-2 ring-[#C5A059] bg-[#C5A059]/10 border-[#C5A059] shadow-lg scale-[1.02]'
@@ -1620,13 +1637,27 @@ export const AdminDashboardPage: React.FC = () => {
                         </div>
 
                         <div className="mt-3 pt-2 text-[10px] font-bold uppercase tracking-wider text-center text-[#C5A059] flex items-center justify-center space-x-1 border-t border-dashed border-white/10">
-                          <span>{isSelected ? '✓ Filter Active (Click to Clear)' : 'Click to Filter Leads →'}</span>
+                          <span>{isSelected ? '✓ Showing this category (click to clear)' : 'See product breakdown →'}</span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              <ProductEnquiryTable
+                rows={productEnquiryRows}
+                scopeLabel={analyticsData.scopeLabel}
+                showCategory={!analyticsData.isScoped}
+                activeProductId={dashboardProductFilter}
+                onViewEnquiries={(productId) => {
+                  setDashboardProductFilter(productId);
+                  if (productId !== 'all') {
+                    document.getElementById('dashboard-leads')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                isDark={isDark}
+              />
 
               {/* ROW 3: THREE-COLUMN EXECUTIVE OVERVIEW STRIP (BY CATEGORY, CHANNEL, AND STATUS) */}
               <ExecutiveOverviewStrip
@@ -1641,7 +1672,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <div className="lg:col-span-7">
                   <ExecutiveTrendChart
                     title="ENQUIRY TREND"
-                    subtitle="Enquiries received per day over the last 7 days"
+                    subtitle={`Enquiries received per day over the last 7 days · ${analyticsData.scopeLabel}`}
                     data={analyticsData.trendData}
                     isDark={isDark}
                     strokeColor="#2563EB"
@@ -1650,12 +1681,12 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
                 <div className="lg:col-span-5">
                   <ExecutiveDonutChart
-                    title="COMMODITY ALLOCATION RATIO"
-                    subtitle="Distribution across 4 core commercial categories"
+                    title={analyticsData.isScoped ? 'ENQUIRY SHARE BY PRODUCT' : 'CATALOGUE BY CATEGORY'}
+                    subtitle={analyticsData.isScoped ? `Each product's share of ${analyticsData.scopeLabel} enquiries` : 'Products listed in each of the 4 categories'}
                     data={analyticsData.donutCategoryData}
                     isDark={isDark}
-                    centerValue={metrics.totalProducts}
-                    centerLabel="Total SKUs"
+                    centerValue={analyticsData.isScoped ? analyticsData.scopedTotal : metrics.totalProducts}
+                    centerLabel={analyticsData.isScoped ? 'Enquiries' : 'Total SKUs'}
                   />
                 </div>
               </div>
@@ -1664,10 +1695,14 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-7">
                   <ExecutiveBarChart
-                    title="APPLICANTS & DEMAND BY CATEGORY"
-                    subtitle="Commercial SKUs across Basmati, Animal Feed, Pulses & Wheat"
+                    title={analyticsData.isScoped ? 'ENQUIRIES PER PRODUCT' : 'ENQUIRIES BY CATEGORY'}
+                    subtitle={analyticsData.isScoped ? `${analyticsData.scopeLabel}: enquiries received by each product` : 'Enquiries received in each category. Click a category card to drill in.'}
                     data={analyticsData.barCategoryData}
                     isDark={isDark}
+                    unit="Enquiries"
+                    totalLabel={analyticsData.scopeLabel}
+                    badgeText="DEMAND"
+                    emptyText="No products in this category yet"
                   />
                 </div>
                 <div className="lg:col-span-5">
@@ -1676,7 +1711,7 @@ export const AdminDashboardPage: React.FC = () => {
                     subtitle="Lead conversion progression from intake to closed contract"
                     data={analyticsData.donutStatusData}
                     isDark={isDark}
-                    centerValue={metrics.total}
+                    centerValue={analyticsData.scopedTotal}
                     centerLabel="Total Leads"
                   />
                 </div>
@@ -1698,14 +1733,14 @@ export const AdminDashboardPage: React.FC = () => {
                     subtitle="Export pack sizes distribution across active catalog products"
                     data={analyticsData.donutPackagingData}
                     isDark={isDark}
-                    centerValue={metrics.totalProducts}
+                    centerValue={analyticsData.scopedProductCount}
                     centerLabel="Products"
                   />
                 </div>
               </div>
 
               {/* ROW 4: CUSTOMER INQUIRIES DATA TABLE */}
-              <div className="space-y-4 pt-2">
+              <div id="dashboard-leads" className="space-y-4 pt-2 scroll-mt-24">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className={`text-base font-serif font-bold ${isDark ? 'text-white' : 'text-[#0D3B2E]'}`}>
@@ -1714,6 +1749,16 @@ export const AdminDashboardPage: React.FC = () => {
                     <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-[#64748B]'}`}>
                       Manage customer leads, status workflows and direct WhatsApp communications
                     </p>
+                    {dashboardProductFilter !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setDashboardProductFilter('all')}
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#C5A059]/15 text-[#8A6828] dark:text-[#DFD1BA] border border-[#C5A059]/40 hover:bg-[#C5A059]/25 cursor-pointer"
+                      >
+                        <span>Product: {productEnquiryRows.find((r) => r.id === dashboardProductFilter)?.name || dashboardProductFilter}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Filter & Search Controls */}
