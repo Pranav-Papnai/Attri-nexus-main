@@ -26,7 +26,7 @@ jobs:
         run: cd frontend && npm install && npm run build
 
       - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli@0.11.x
+        run: npm install -g @lhci/cli@0.15.x
 
       - name: Start preview server
         run: |
