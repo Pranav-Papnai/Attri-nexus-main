@@ -16,7 +16,6 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { requestPasswordReset, verifyAndResetPassword } from '@/services/api/auth';
-import { passwordProblem } from '@/utils/passwordPolicy';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -118,9 +117,8 @@ export const AdminLoginPage: React.FC = () => {
     e.preventDefault();
     setForgotError(null);
 
-    const problem = passwordProblem(newPassword);
-    if (problem) {
-      setForgotError(problem);
+    if (newPassword.length < 8) {
+      setForgotError('Password must be at least 8 characters long.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -450,7 +448,7 @@ export const AdminLoginPage: React.FC = () => {
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       required
-                      placeholder="At least 10 characters, mixed case, number, symbol"
+                      placeholder="Minimum 8 characters"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full pl-10 pr-10 py-2.5 bg-[#0C1015] border border-white/15 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#C5A059] transition-all"

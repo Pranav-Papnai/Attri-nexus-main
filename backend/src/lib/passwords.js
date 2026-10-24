@@ -2,10 +2,7 @@ import bcrypt from 'bcryptjs';
 import { AdminUser } from '../db/models/AdminUser.js';
 
 export const BCRYPT_ROUNDS = 12;
-export const MIN_PASSWORD_LENGTH = 10;
-// Keep in sync with frontend/src/utils/passwordPolicy.ts.
-export const PASSWORD_RULE_MESSAGE =
-  'Password must be at least 10 characters and include an uppercase letter, a lowercase letter, a number and a special character (e.g. @ ! # $ %)';
+export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128; // bcrypt CPU-exhaustion guard
 
 // Until October 2026 every request body passed through an HTML-stripping
@@ -32,12 +29,14 @@ export function isAcceptablePassword(password) {
     return false;
   }
 
+  // Strong password requirements
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasSpecialChar = /[@!#$%^&*()_\-+=\[\]{};:'",.<>?/\\|`~]/.test(password);
+  const isLongEnough = password.length >= 12;
 
-  return hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
+  return hasUppercase && hasLowercase && hasNumber && hasSpecialChar && isLongEnough;
 }
 
 // `user` needs _id and passwordHash. Resolves true when the password matches,

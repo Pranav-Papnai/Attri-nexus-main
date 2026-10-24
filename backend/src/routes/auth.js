@@ -13,7 +13,7 @@ import { loginLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js'
 import { asyncHandler } from '../middleware/errors.js';
 import { revokeToken } from '../lib/revocation.js';
 import { audit } from '../lib/audit.js';
-import { hashPassword, isAcceptablePassword, verifyPassword, MAX_PASSWORD_LENGTH, PASSWORD_RULE_MESSAGE } from '../lib/passwords.js';
+import { hashPassword, isAcceptablePassword, verifyPassword, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '../lib/passwords.js';
 import { verifyTotp, hashRecoveryCode } from '../lib/totp.js';
 import { issueToken, issueMfaChallenge, publicUser } from '../lib/tokens.js';
 import mfaRoutes from './mfa.js';
@@ -261,7 +261,7 @@ router.post(
     if (!isAcceptablePassword(password)) {
       res.status(400).json({
         success: false,
-        error: PASSWORD_RULE_MESSAGE
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }
@@ -377,7 +377,7 @@ router.patch(
     if (!isAcceptablePassword(newPassword)) {
       res.status(400).json({
         success: false,
-        error: PASSWORD_RULE_MESSAGE
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }
@@ -487,7 +487,7 @@ router.post(
     if (!isAcceptablePassword(newPassword)) {
       res.status(400).json({
         success: false,
-        error: PASSWORD_RULE_MESSAGE
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }
