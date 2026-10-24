@@ -70,6 +70,9 @@ const HERO_SLIDES: HeroSlide[] = [
 
 export const HomePage: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  // Slides overlap inside the viewport, so loading="lazy" would still fetch all of
+  // them up front. Mount each image only once it is current or next.
+  const [mountedSlides, setMountedSlides] = useState<ReadonlySet<number>>(() => new Set([0, 1]));
   const [activeShowcaseCategory, setActiveShowcaseCategory] = useState<string>('All');
   const { products } = useProducts();
   const { openEnquiryModal } = useEnquiryModal();
@@ -98,6 +101,11 @@ export const HomePage: React.FC = () => {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const next = (currentSlide + 1) % HERO_SLIDES.length;
+    setMountedSlides((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+  }, [currentSlide]);
 
   // Filter products for interactive showcase
   const displayedProducts = useMemo(() => {
@@ -145,16 +153,19 @@ export const HomePage: React.FC = () => {
                 isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
             >
-              <img
-                src={slide.image}
-                alt={slide.alt}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                fetchPriority={idx === 0 ? 'high' : 'auto'}
-                decoding="async"
-                className={`w-full h-full object-cover object-center brightness-[0.48] contrast-[1.08] ${
-                  isActive ? 'animate-cinematic-pan' : 'scale-100'
-                }`}
-              />
+              {mountedSlides.has(idx) && (
+                <img
+                  src={slide.image}
+                  alt={slide.alt}
+                  width={1376}
+                  height={768}
+                  fetchPriority={idx === 0 ? 'high' : 'low'}
+                  decoding={idx === 0 ? 'sync' : 'async'}
+                  className={`w-full h-full object-cover object-center brightness-[0.48] contrast-[1.08] ${
+                    isActive ? 'animate-cinematic-pan' : 'scale-100'
+                  }`}
+                />
+              )}
             </div>
           );
         })}
