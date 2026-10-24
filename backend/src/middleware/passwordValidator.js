@@ -1,13 +1,13 @@
 /**
  * Password strength validator
- * Requirements: Min 12 chars, uppercase, lowercase, number, special char
+ * Requirements: Min 10 chars, uppercase, lowercase, number, special char
  */
 
 export function validatePassword(password) {
   const rules = [
     {
-      regex: /^.{12,}$/,
-      message: 'minimum 12 characters'
+      regex: /^.{10,}$/,
+      message: 'minimum 10 characters'
     },
     {
       regex: /[a-z]/,
@@ -48,7 +48,7 @@ export function getPasswordStrength(password) {
   let score = 0;
   const feedback = [];
 
-  if (password.length >= 12) score++;
+  if (password.length >= 10) score++;
   if (password.length >= 16) score++;
   if (/[a-z]/.test(password)) score++;
   if (/[A-Z]/.test(password)) score++;

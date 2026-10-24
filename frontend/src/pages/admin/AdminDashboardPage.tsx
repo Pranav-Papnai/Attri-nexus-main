@@ -26,6 +26,7 @@ import {
 import { SecurityPanel } from '../../components/admin/SecurityPanel';
 import { AuditLogPanel } from '../../components/admin/AuditLogPanel';
 import { ProductEnquiryTable, type ProductEnquiryRow } from '../../components/admin/ProductEnquiryTable';
+import { passwordProblem } from '@/utils/passwordPolicy';
 import { downloadCsv } from '../../utils/csv';
 import {
   ExecutiveDonutChart,
@@ -820,8 +821,9 @@ export const AdminDashboardPage: React.FC = () => {
       alert('Email and password are required.');
       return;
     }
-    if (newAdminForm.password.length < 8) {
-      alert('Password must be at least 8 characters long.');
+    const problem = passwordProblem(newAdminForm.password);
+    if (problem) {
+      alert(problem);
       return;
     }
 
@@ -874,8 +876,9 @@ export const AdminDashboardPage: React.FC = () => {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!changingPasswordUser) return;
-    if (newPasswordInput.length < 8) {
-      alert('Password must be at least 8 characters long.');
+    const problem = passwordProblem(newPasswordInput);
+    if (problem) {
+      alert(problem);
       return;
     }
 
@@ -3276,8 +3279,8 @@ export const AdminDashboardPage: React.FC = () => {
                     <input
                       type={showNewAdminPassword ? 'text' : 'password'}
                       required
-                      minLength={8}
-                      placeholder="Enter secure password"
+                      minLength={10}
+                      placeholder="At least 10 characters, mixed case, number, symbol"
                       value={newAdminForm.password}
                       onChange={(e) => setNewAdminForm({ ...newAdminForm, password: e.target.value })}
                       className={`w-full pl-3.5 pr-10 py-2.5 rounded-xl text-xs border font-mono focus:outline-none focus:ring-2 focus:ring-[#8A6828] ${
@@ -3393,8 +3396,8 @@ export const AdminDashboardPage: React.FC = () => {
                   <input
                     type={showChangePasswordInput ? 'text' : 'password'}
                     required
-                    minLength={8}
-                    placeholder="Enter new password (min 8 chars)"
+                    minLength={10}
+                    placeholder="At least 10 characters, mixed case, number, symbol"
                     value={newPasswordInput}
                     onChange={(e) => setNewPasswordInput(e.target.value)}
                     className={`w-full pl-3.5 pr-10 py-2.5 rounded-xl text-xs border font-mono focus:outline-none focus:ring-2 focus:ring-[#8A6828] ${

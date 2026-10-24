@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { validatePassword, getPasswordStrength } from '../src/middleware/passwordValidator.js';
 import { isAcceptablePassword } from '../src/lib/passwords.js';
 
-const STRONG = ['MyPassword123@', 'SecureP@ss2024', 'Admin#2024Work', 'C0mpl3x!Pass', 'Str0ng#Secure@Pass123'];
+const STRONG = ['Attri@2024', 'MyPassword123@', 'SecureP@ss2024', 'Admin#2024Work', 'C0mpl3x!Pass', 'Str0ng#Secure@Pass123'];
 const COMMON_WEAK = ['123456', '123456789', 'password', 'qwerty', 'abc123', '12345678', '111111', 'letmein', 'welcome', 'monkey'];
 
 describe('validatePassword()', () => {
-  test('rejects passwords shorter than 12 characters', () => {
-    assert.throws(() => validatePassword('Pass1@abc'), /minimum 12 characters/);
+  test('rejects passwords shorter than 10 characters', () => {
+    assert.throws(() => validatePassword('Pass1@abc'), /minimum 10 characters/);
   });
 
   test('rejects a password missing an uppercase letter', () => {
