@@ -14,19 +14,29 @@ interface ExecutiveBarChartProps {
   subtitle?: string;
   data: BarCategoryItem[];
   isDark: boolean;
+  unit?: string;
+  totalLabel?: string;
+  badgeText?: string;
+  emptyText?: string;
 }
 
 export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
   title,
   subtitle,
   data,
-  isDark
+  isDark,
+  unit = 'SKUs',
+  totalLabel = 'Total Catalog Range',
+  badgeText = 'COMMODITY MATRIX',
+  emptyText = 'Nothing to show yet'
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const total = data.reduce((acc, d) => acc + d.value, 0) || 1;
   const maxValue = Math.max(...data.map((d) => d.value), 6);
   const ceiling = Math.ceil(maxValue * 1.2);
+  // Product drill-downs can have 9+ columns; tighten spacing and type.
+  const dense = data.length > 5;
 
   // 4 clear horizontal grid steps
   const yTicks = [
@@ -48,7 +58,7 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] bg-[#0D3B2E] text-[#DFD1BA] border border-[#C5A059]/40">
-              COMMODITY MATRIX
+              {badgeText}
             </span>
             <h3 className={`text-sm sm:text-base font-serif font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#0D3B2E]'}`}>
               {title}
@@ -68,10 +78,10 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
             : isDark ? 'bg-white/5 border-transparent' : 'bg-slate-50 border-slate-200/80'
         }`}>
           <span className={`text-sm sm:text-base font-extrabold font-mono ${isDark ? 'text-white' : 'text-[#0D3B2E]'}`}>
-            {hoveredIdx !== null ? data[hoveredIdx].value : total} SKUs
+            {hoveredIdx !== null ? data[hoveredIdx].value : data.reduce((acc, d) => acc + d.value, 0)} {unit}
           </span>
-          <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            {hoveredIdx !== null ? data[hoveredIdx].label : 'Total Catalog Range'}
+          <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 max-w-[180px] truncate">
+            {hoveredIdx !== null ? data[hoveredIdx].label : totalLabel}
           </span>
         </div>
       </div>
@@ -91,7 +101,15 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
         </div>
 
         {/* Tall Columns Grid with Spacious Width & Column Tower Tracks */}
-        <div className="grid grid-cols-4 gap-4 sm:gap-8 md:gap-10 pl-10 pr-4 relative z-10 h-64 sm:h-72 items-end pb-12">
+        {data.length === 0 && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center text-xs font-semibold text-gray-400">
+            {emptyText}
+          </div>
+        )}
+        <div
+          className={`grid ${dense ? 'gap-1.5 sm:gap-2' : 'gap-4 sm:gap-8 md:gap-10'} pl-10 pr-4 relative z-10 h-64 sm:h-72 items-end pb-12`}
+          style={{ gridTemplateColumns: `repeat(${Math.max(data.length, 1)}, minmax(0, 1fr))` }}
+        >
           {data.map((item, idx) => {
             const isHovered = hoveredIdx === idx;
             const barHeightPct = item.value > 0 ? Math.max((item.value / ceiling) * 100, 10) : 0;
@@ -117,11 +135,11 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
                   }}
                 >
                   <span className="font-extrabold">{item.value}</span>
-                  <span className="text-[10px] opacity-75">({sharePct}%)</span>
+                  {!dense && <span className="text-[10px] opacity-75">({sharePct}%)</span>}
                 </div>
 
                 {/* Substantial, Wide Column Tower Track */}
-                <div className="w-12 sm:w-16 md:w-20 lg:w-24 h-48 sm:h-56 bg-slate-100/80 dark:bg-white/[0.04] rounded-t-2xl p-1 sm:p-1.5 flex items-end justify-center border border-slate-200/60 dark:border-white/5 transition-all group-hover:border-slate-300 dark:group-hover:border-white/15">
+                <div className="w-full max-w-[6rem] h-48 sm:h-56 bg-slate-100/80 dark:bg-white/[0.04] rounded-t-2xl p-1 sm:p-1.5 flex items-end justify-center border border-slate-200/60 dark:border-white/5 transition-all group-hover:border-slate-300 dark:group-hover:border-white/15">
                   {/* Active Colored Fill Bar */}
                   <div
                     style={{
@@ -140,10 +158,10 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
                 </div>
 
                 {/* X-Axis Category Name & Emoji */}
-                <div className="mt-3 text-center">
-                  <div className="flex items-center justify-center space-x-1">
+                <div className="mt-3 text-center w-full min-w-0">
+                  <div className="flex items-center justify-center space-x-1 min-w-0">
                     {item.emoji && <span className="text-sm">{item.emoji}</span>}
-                    <span className={`text-xs sm:text-sm font-bold tracking-tight truncate max-w-[85px] sm:max-w-none transition-colors ${
+                    <span title={item.label} className={`${dense ? 'text-[10px] sm:text-[11px]' : 'text-xs sm:text-sm'} font-bold tracking-tight truncate min-w-0 transition-colors ${
                       isHovered
                         ? (isDark ? 'text-white' : 'text-[#0D3B2E]')
                         : (isDark ? 'text-gray-300' : 'text-[#2D3748]')
@@ -151,9 +169,11 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
                       {item.shortLabel || item.label}
                     </span>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 block mt-0.5">
-                    {item.value} Products
-                  </span>
+                  {!dense && (
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 block mt-0.5">
+                      {item.value} {unit}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -189,7 +209,7 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px] mt-1 pl-4.5 font-mono">
-                <span className="text-gray-400 font-semibold">{item.value} SKUs</span>
+                <span className="text-gray-400 font-semibold">{item.value} {unit}</span>
                 <span className="font-bold" style={{ color: item.color }}>{sharePct}%</span>
               </div>
             </div>
