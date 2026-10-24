@@ -1820,6 +1820,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <option value="Animal Feed">🐮 Animal Feed</option>
                       <option value="Beans and Pulses">🫘 Beans & Pulses</option>
                       <option value="Wheat">🌾 Wheat & Grains</option>
+                      <option value="General">✉️ General (no product)</option>
                     </select>
 
                     <select
