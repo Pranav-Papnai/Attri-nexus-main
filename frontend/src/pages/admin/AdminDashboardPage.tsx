@@ -409,7 +409,7 @@ export const AdminDashboardPage: React.FC = () => {
         varietyCounts[name] = (varietyCounts[name] || 0) + 1;
       });
       const topVarietyEntry = Object.entries(varietyCounts).sort((a, b) => b[1] - a[1])[0];
-      const topVariety = topVarietyEntry ? topVarietyEntry[0] : (catProducts[0]?.name || 'Standard Catalog');
+      const topVariety = topVarietyEntry ? topVarietyEntry[0] : 'No enquiries yet';
 
       return {
         id: cat.id,
@@ -537,23 +537,18 @@ export const AdminDashboardPage: React.FC = () => {
       })
       .sort((a, b) => b.count - a.count);
 
-    // 1. Trend Curve Data Points (Smooth 7-Point Curve matching reference)
-    const trendData = days.map((d, i) => {
-      const realCount = d.count;
-      // In testing when total inquiries are small, provide realistic baseline curve scaled to actual metrics
-      const baseline = Math.round(18 + (i / 6) * 78 + (realCount * 2));
-      return {
-        label: i === 6 ? 'Today' : i === 0 ? 'Start' : d.label.split(',')[0] || d.label,
-        value: totalInq > 15 ? realCount : baseline,
-        subLabel: d.dateStr
-      };
-    });
+    // 1. Enquiries received per day over the last 7 days
+    const trendData = days.map((d, i) => ({
+      label: i === 6 ? 'Today' : d.label.split(',')[0] || d.label,
+      value: d.count,
+      subLabel: d.dateStr
+    }));
 
     // 2. Vertical Bar Chart: Products Count by Category
-    const riceCount = products.filter(p => normalizeCategory(p.category) === 'Rice').length || 9;
-    const feedCount = products.filter(p => normalizeCategory(p.category) === 'Animal Feed').length || 5;
-    const pulseCount = products.filter(p => normalizeCategory(p.category) === 'Beans and Pulses').length || 8;
-    const wheatCount = products.filter(p => normalizeCategory(p.category) === 'Wheat').length || 8;
+    const riceCount = products.filter(p => normalizeCategory(p.category) === 'Rice').length;
+    const feedCount = products.filter(p => normalizeCategory(p.category) === 'Animal Feed').length;
+    const pulseCount = products.filter(p => normalizeCategory(p.category) === 'Beans and Pulses').length;
+    const wheatCount = products.filter(p => normalizeCategory(p.category) === 'Wheat').length;
 
     const barCategoryData = [
       { label: 'Rice & Basmati', shortLabel: 'Rice', value: riceCount, color: '#2563EB', emoji: '🌾' },
@@ -576,10 +571,10 @@ export const AdminDashboardPage: React.FC = () => {
     const closInq = inquiries.filter(i => i.status === 'closed').length;
 
     const donutStatusData = [
-      { label: 'Action Required (New)', value: Math.max(newInq, 2), color: '#F59E0B' },
-      { label: 'In Contact (Engaged)', value: Math.max(contInq, 1), color: '#3B82F6' },
-      { label: 'Price Quoted Sent', value: Math.max(quotInq, 1), color: '#8B5CF6' },
-      { label: 'Secured Contracts', value: Math.max(closInq, 3), color: '#10B981' }
+      { label: 'Action Required (New)', value: newInq, color: '#F59E0B' },
+      { label: 'In Contact (Engaged)', value: contInq, color: '#3B82F6' },
+      { label: 'Price Quoted Sent', value: quotInq, color: '#8B5CF6' },
+      { label: 'Secured Contracts', value: closInq, color: '#10B981' }
     ];
 
     // 5. Donut 3: Export Packaging Breakdown
@@ -598,26 +593,26 @@ export const AdminDashboardPage: React.FC = () => {
     });
 
     const donutPackagingData = [
-      { label: '50kg Bulk Jute / Poly', value: packagingCounts['50kg Bulk Commercial'] || 10, color: '#0D3B2E' },
-      { label: '25kg Commercial Bag', value: packagingCounts['25kg Master Bag'] || 12, color: '#C5A059' },
-      { label: '10kg Master Pack', value: packagingCounts['10kg Master Pack'] || 5, color: '#2563EB' },
-      { label: '1kg-5kg Retail Pouches', value: packagingCounts['1kg-5kg Retail Pouches'] || 3, color: '#EC4899' }
+      { label: '50kg Bulk Jute / Poly', value: packagingCounts['50kg Bulk Commercial'], color: '#0D3B2E' },
+      { label: '25kg Commercial Bag', value: packagingCounts['25kg Master Bag'], color: '#C5A059' },
+      { label: '10kg Master Pack', value: packagingCounts['10kg Master Pack'], color: '#2563EB' },
+      { label: '1kg-5kg Retail Pouches', value: packagingCounts['1kg-5kg Retail Pouches'], color: '#EC4899' }
     ];
 
     // 6. Dual Comparison Horizontal Bar Chart
-    const activeProductsCount = products.filter(p => p.isActive !== false).length || 30;
-    const totalProductsCount = products.length || 30;
+    const activeProductsCount = products.filter(p => p.isActive !== false).length;
+    const totalProductsCount = products.length;
     const dualBarData = [
       {
         label: 'Commercial Inquiries Handled',
-        subLabel: 'Active Pricing & Fulfilled Deals',
-        value: Math.max(contInq + quotInq + closInq, 1),
-        total: Math.max(totalInq, 1),
+        subLabel: 'Contacted, quoted or closed',
+        value: contInq + quotInq + closInq,
+        total: inquiries.length,
         color: '#10B981'
       },
       {
         label: 'Active Export-Ready SKUs',
-        subLabel: '30 Commercial Products In Stock',
+        subLabel: `${activeProductsCount} of ${totalProductsCount} products active`,
         value: activeProductsCount,
         total: totalProductsCount,
         color: '#F59E0B'
@@ -629,7 +624,7 @@ export const AdminDashboardPage: React.FC = () => {
       id: b.shortLabel,
       name: b.label,
       count: b.value,
-      pct: Math.round((b.value / totalProductsCount) * 100),
+      pct: Math.round((b.value / (totalProductsCount || 1)) * 100),
       color: b.color
     }));
     const overviewDivisions = sources.map(s => ({
@@ -1645,12 +1640,12 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-7">
                   <ExecutiveTrendChart
-                    title="REGISTRATION & DEMAND TREND"
-                    subtitle="Velocity of commercial trade leads & grain allocations across timeline"
+                    title="ENQUIRY TREND"
+                    subtitle="Enquiries received per day over the last 7 days"
                     data={analyticsData.trendData}
                     isDark={isDark}
                     strokeColor="#2563EB"
-                    badgeText="LIVE ACTIVE"
+                    badgeText="LAST 7 DAYS"
                   />
                 </div>
                 <div className="lg:col-span-5">
@@ -1703,8 +1698,8 @@ export const AdminDashboardPage: React.FC = () => {
                     subtitle="Export pack sizes distribution across active catalog products"
                     data={analyticsData.donutPackagingData}
                     isDark={isDark}
-                    centerValue="100%"
-                    centerLabel="Export Ready"
+                    centerValue={metrics.totalProducts}
+                    centerLabel="Products"
                   />
                 </div>
               </div>

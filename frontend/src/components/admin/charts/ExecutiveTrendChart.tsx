@@ -109,10 +109,10 @@ export const ExecutiveTrendChart: React.FC<ExecutiveTrendChartProps> = ({
             : isDark ? 'bg-white/5 border-transparent' : 'bg-slate-50 border-slate-200/80'
         }`}>
           <span className={`text-sm sm:text-base font-extrabold font-mono ${isDark ? 'text-white' : 'text-[#0D3B2E]'}`}>
-            {activePoint !== null ? points[activePoint].value : points[points.length - 1]?.value} Units
+            {activePoint !== null ? points[activePoint].value : points[points.length - 1]?.value} Enquiries
           </span>
           <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            {activePoint !== null ? points[activePoint].label : 'Current Velocity'}
+            {activePoint !== null ? points[activePoint].label : 'Today'}
           </span>
         </div>
       </div>
