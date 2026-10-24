@@ -94,7 +94,7 @@ export const ExecutiveBarChart: React.FC<ExecutiveBarChartProps> = ({
         <div className="grid grid-cols-4 gap-4 sm:gap-8 md:gap-10 pl-10 pr-4 relative z-10 h-64 sm:h-72 items-end pb-12">
           {data.map((item, idx) => {
             const isHovered = hoveredIdx === idx;
-            const barHeightPct = Math.max((item.value / ceiling) * 100, 10);
+            const barHeightPct = item.value > 0 ? Math.max((item.value / ceiling) * 100, 10) : 0;
             const sharePct = Math.round((item.value / total) * 100);
 
             return (

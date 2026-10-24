@@ -74,9 +74,9 @@ export const ExecutiveDonutChart: React.FC<ExecutiveDonutChartProps> = ({
       </div>
 
       {/* Donut Graphic + Side Legend */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 my-auto py-1">
-        {/* SVG Donut (Grand w-52 h-52) */}
-        <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0 flex items-center justify-center">
+      {/* Stacked while the card is a narrow 5/12 column (lg-xl) so legend labels fit. */}
+      <div className="flex flex-col sm:flex-row lg:flex-col 2xl:flex-row items-center justify-between gap-5 2xl:gap-8 my-auto py-1">
+        <div className="relative w-44 h-44 2xl:w-52 2xl:h-52 flex-shrink-0 flex items-center justify-center">
           <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 170 170">
             {/* Background Ring Track */}
             <circle
@@ -90,6 +90,8 @@ export const ExecutiveDonutChart: React.FC<ExecutiveDonutChartProps> = ({
 
             {/* Colored Segment Rings */}
             {segmentsWithAngles.map((seg) => {
+              // A zero-length dash with round caps still paints a dot.
+              if (seg.value <= 0) return null;
               const isHovered = hoveredIdx === seg.index;
               return (
                 <circle
@@ -127,7 +129,7 @@ export const ExecutiveDonutChart: React.FC<ExecutiveDonutChartProps> = ({
         </div>
 
         {/* Legend List on the right */}
-        <div className="w-full sm:w-auto flex-1 space-y-2.5">
+        <div className="w-full sm:w-auto lg:w-full 2xl:w-auto flex-1 min-w-0 space-y-2.5">
           {segmentsWithAngles.map((seg) => {
             const isHovered = hoveredIdx === seg.index;
             return (

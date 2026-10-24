@@ -67,7 +67,7 @@ export const ExecutiveOverviewStrip: React.FC<ExecutiveOverviewStripProps> = ({
               </div>
               <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                 <div
-                  style={{ width: `${Math.max(cat.pct, 4)}%`, backgroundColor: cat.color }}
+                  style={{ width: `${cat.count > 0 ? Math.max(cat.pct, 4) : 0}%`, backgroundColor: cat.color }}
                   className="h-full rounded-full transition-all duration-500"
                 />
               </div>
