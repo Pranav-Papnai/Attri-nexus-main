@@ -28,9 +28,10 @@ services:
   # Frontend Service (Vite React + Nginx)
   # ==========================================
   frontend:
-    # CI deploys the exact commit it built (IMAGE_TAG=<git sha>); a local
-    # `docker compose up --build` builds and tags :local.
-    image: akashiseijuro23/attri-frontend:${IMAGE_TAG:-local}
+    # Pulled from Docker Hub. CI deploys the exact commit it built
+    # (IMAGE_TAG=<git sha>); without IMAGE_TAG the newest :latest is pulled.
+    # `docker compose up --build` builds from source instead.
+    image: akashiseijuro23/attri-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -51,7 +52,7 @@ services:
   # Backend API Service (Express + Node.js)
   # ==========================================
   backend:
-    image: akashiseijuro23/attri-backend:${IMAGE_TAG:-local}
+    image: akashiseijuro23/attri-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
