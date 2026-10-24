@@ -151,7 +151,7 @@ describe('auth', () => {
   test('register requires an existing admin token', async () => {
     const { status } = await api('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'x@attri.test', password: 'longenough1' })
+      body: JSON.stringify({ email: 'x@attri.test', password: 'LongEnough#2024' })
     });
     assert.equal(status, 401);
   });
@@ -184,7 +184,7 @@ describe('auth', () => {
   test('an admin can create another admin, and never twice', async () => {
     const payload = JSON.stringify({
       email: 'second@attri.test',
-      password: 'another-good-password',
+      password: 'Another-Good-Pass1',
       name: 'Second'
     });
 
@@ -199,7 +199,7 @@ describe('auth', () => {
   test('the stored password is hashed, never plaintext', async () => {
     const user = await AdminUser.findOne({ email: 'second@attri.test' }).lean();
     assert.ok(user.passwordHash.startsWith('$2'));
-    assert.ok(!JSON.stringify(user).includes('another-good-password'));
+    assert.ok(!JSON.stringify(user).includes('Another-Good-Pass1'));
   });
 
   // The real code only ever leaves the server by email, so tests overwrite the
@@ -236,14 +236,14 @@ describe('auth', () => {
     for (let i = 0; i < 5; i++) {
       const wrong = await api('/api/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ email: 'admin@attri.test', otp: String(100000 + i), newPassword: 'never-applied-1' })
+        body: JSON.stringify({ email: 'admin@attri.test', otp: String(100000 + i), newPassword: 'Never-Applied-Pass1' })
       });
       assert.equal(wrong.status, 400);
     }
 
     const correctTooLate = await api('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', otp: '424242', newPassword: 'never-applied-1' })
+      body: JSON.stringify({ email: 'admin@attri.test', otp: '424242', newPassword: 'Never-Applied-Pass1' })
     });
     assert.equal(correctTooLate.status, 400);
   });
@@ -269,14 +269,14 @@ describe('auth', () => {
     // 3. Reject invalid OTP
     const wrongOtpRes = await api('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', otp: '000000', newPassword: 'new-secure-password' })
+      body: JSON.stringify({ email: 'admin@attri.test', otp: '000000', newPassword: 'New-Secure-Pass1' })
     });
     assert.equal(wrongOtpRes.status, 400);
 
     // 4. Successful password reset
     const resetRes = await api('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', otp, newPassword: 'new-secure-password' })
+      body: JSON.stringify({ email: 'admin@attri.test', otp, newPassword: 'New-Secure-Pass1' })
     });
     assert.equal(resetRes.status, 200);
     assert.equal(resetRes.body.success, true);
@@ -285,7 +285,7 @@ describe('auth', () => {
     // 5. Verify can now log in with the new password
     const newLoginRes = await api('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', password: 'new-secure-password' })
+      body: JSON.stringify({ email: 'admin@attri.test', password: 'New-Secure-Pass1' })
     });
     assert.equal(newLoginRes.status, 200);
     assert.equal(newLoginRes.body.success, true);
@@ -298,7 +298,7 @@ describe('auth', () => {
     await plantResetCode('admin@attri.test', '246802');
     const resetBack = await api('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@attri.test', otp: '246802', newPassword: 'good-password-1' })
+      body: JSON.stringify({ email: 'admin@attri.test', otp: '246802', newPassword: 'Good-Password-1A' })
     });
     assert.equal(resetBack.status, 200);
 
@@ -318,7 +318,7 @@ describe('roles and sessions', () => {
     const { RateLimitHit } = await import('../src/db/models/RateLimitHit.js');
     await RateLimitHit.deleteMany({});
   });
-  let commercialPassword = 'another-good-password';
+  let commercialPassword = 'Another-Good-Pass1';
   let commercialToken;
   let commercialId;
 
@@ -346,7 +346,7 @@ describe('roles and sessions', () => {
     const res = await api('/api/auth/register', {
       method: 'POST',
       headers: asAdmin(),
-      body: JSON.stringify({ email: 'oddrole@attri.test', password: 'longenough1', role: 'Owner' })
+      body: JSON.stringify({ email: 'oddrole@attri.test', password: 'LongEnough#2024', role: 'Owner' })
     });
     assert.equal(res.status, 400);
   });
@@ -360,7 +360,7 @@ describe('roles and sessions', () => {
       (await api('/api/auth/register', {
         method: 'POST',
         headers: h,
-        body: JSON.stringify({ email: 'sneaky@attri.test', password: 'longenough1', role: 'Super Admin' })
+        body: JSON.stringify({ email: 'sneaky@attri.test', password: 'LongEnough#2024', role: 'Super Admin' })
       })).status,
       403
     );
@@ -369,7 +369,7 @@ describe('roles and sessions', () => {
       (await api(`/api/auth/users/${superId}/password`, {
         method: 'PATCH',
         headers: h,
-        body: JSON.stringify({ newPassword: 'taken-over-123' })
+        body: JSON.stringify({ newPassword: 'Taken-Over-Pass123' })
       })).status,
       403
     );
@@ -377,7 +377,7 @@ describe('roles and sessions', () => {
   });
 
   test('changing your own password requires the current password', async () => {
-    for (const body of [{ newPassword: 'whatever-new-1' }, { newPassword: 'whatever-new-1', currentPassword: 'not-it-at-all' }]) {
+    for (const body of [{ newPassword: 'Whatever-New-Pass1' }, { newPassword: 'Whatever-New-Pass1', currentPassword: 'not-it-at-all' }]) {
       const res = await api(`/api/auth/users/${commercialId}/password`, {
         method: 'PATCH',
         headers: asAdmin(commercialToken),
@@ -393,7 +393,7 @@ describe('roles and sessions', () => {
   test('changing your own password returns a fresh token and ends the old session', async () => {
     await nextSecond();
     const previousPassword = commercialPassword;
-    commercialPassword = 'commercial-new-pass-1';
+    commercialPassword = 'Commercial-New-Pass1';
     const res = await api(`/api/auth/users/${commercialId}/password`, {
       method: 'PATCH',
       headers: asAdmin(commercialToken),
@@ -412,7 +412,7 @@ describe('roles and sessions', () => {
     const res = await api(`/api/auth/users/${commercialId}/password`, {
       method: 'PATCH',
       headers: asAdmin(),
-      body: JSON.stringify({ newPassword: 'set-by-super-admin-1' })
+      body: JSON.stringify({ newPassword: 'Set-By-Super-Admin1' })
     });
     assert.equal(res.status, 200);
     assert.equal(res.body.token, undefined, 'no token is handed out for someone else');
@@ -420,7 +420,7 @@ describe('roles and sessions', () => {
   });
 
   test('a deleted admin loses access immediately', async () => {
-    const token = await loginAs(COMMERCIAL_EMAIL, 'set-by-super-admin-1');
+    const token = await loginAs(COMMERCIAL_EMAIL, 'Set-By-Super-Admin1');
     assert.equal((await api('/api/auth/me', { headers: asAdmin(token) })).status, 200);
 
     const del = await api(`/api/auth/users/${commercialId}`, { method: 'DELETE', headers: asAdmin() });

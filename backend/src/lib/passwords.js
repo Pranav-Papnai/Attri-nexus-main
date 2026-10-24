@@ -25,11 +25,18 @@ export function hashPassword(password) {
 }
 
 export function isAcceptablePassword(password) {
-  return (
-    typeof password === 'string' &&
-    password.length >= MIN_PASSWORD_LENGTH &&
-    password.length <= MAX_PASSWORD_LENGTH
-  );
+  if (!(typeof password === 'string' && password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH)) {
+    return false;
+  }
+
+  // Strong password requirements
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[@!#$%^&*()_\-+=\[\]{};:'",.<>?/\\|`~]/.test(password);
+  const isLongEnough = password.length >= 12;
+
+  return hasUppercase && hasLowercase && hasNumber && hasSpecialChar && isLongEnough;
 }
 
 // `user` needs _id and passwordHash. Resolves true when the password matches,

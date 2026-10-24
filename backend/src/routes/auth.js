@@ -261,7 +261,7 @@ router.post(
     if (!isAcceptablePassword(password)) {
       res.status(400).json({
         success: false,
-        error: `Email and a password between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters are required`
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }
@@ -377,7 +377,7 @@ router.patch(
     if (!isAcceptablePassword(newPassword)) {
       res.status(400).json({
         success: false,
-        error: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters long.`
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }
@@ -487,7 +487,7 @@ router.post(
     if (!isAcceptablePassword(newPassword)) {
       res.status(400).json({
         success: false,
-        error: `New password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters long`
+        error: 'Password must be at least 12 characters with uppercase, lowercase, number, and special character (@!#$%^&*)'
       });
       return;
     }

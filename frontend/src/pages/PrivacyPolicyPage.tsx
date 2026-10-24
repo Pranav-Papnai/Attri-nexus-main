@@ -5,9 +5,8 @@ import {
   UserCheck, 
   Lock, 
   Scale, 
-  Clock, 
-  Globe, 
-  AlertCircle, 
+  Clock,
+  AlertCircle,
   Mail, 
   Phone, 
   MapPin, 
@@ -19,7 +18,6 @@ import {
 import { LegalLayout } from '@/components/legal/LegalLayout';
 import { BUSINESS_CONFIG } from '@/constants/business';
 import {
-  DATA_PROCESSORS,
   GRIEVANCE_OFFICER,
   INQUIRY_RETENTION_MONTHS,
   PRIVACY_POLICY_VERSION
@@ -284,26 +282,16 @@ export const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         <p className="text-sm leading-relaxed text-[#475569]">
-          We do not sell, rent, monetize, or disclose your inquiries to commercial third parties. We engage only vetted technical infrastructure processors bound by formal Data Processing Addendums (DPAs):
+          We do not sell, rent, monetize, or disclose your inquiries to commercial third parties. We share data only with vetted technical service providers that process it on our behalf, under contractual data-protection obligations, for these purposes:
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {DATA_PROCESSORS.map((dp) => (
-            <div key={dp.name} className="p-4 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-sm">{dp.name}</span>
-                <span className="text-[10px] font-mono text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
-                  Processor
-                </span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">{dp.purpose}</p>
-              <div className="pt-2 flex items-center gap-1.5 text-slate-400 text-[11px]">
-                <Globe className="w-3 h-3 text-[#C5A059]" />
-                <span>Region: {dp.location}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ul className="list-disc pl-5 space-y-1.5 text-sm leading-relaxed text-[#475569]">
+          <li>Hosting the website and the server that receives enquiries</li>
+          <li>Storing enquiry records securely</li>
+          <li>Delivering enquiry notifications to our sales team by email</li>
+          <li>Protecting enquiry forms from bots and spam</li>
+          <li>Storing and serving product images</li>
+        </ul>
       </section>
 
       {/* 7. Cross-Border Transfers */}
@@ -318,7 +306,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         <p className="text-sm leading-relaxed text-[#475569]">
-          Core enquiry databases reside within India (AWS Mumbai region, ap-south-1). Enquiries reach that database through our API server, currently hosted by Render in Singapore, which processes them in transit and does not store their content. In accordance with Section 16 of the DPDP Act 2023, data transmission to global CDN edge caches or transactional email gateways (e.g. Resend) occurs solely to un-restricted jurisdictions and subject to international enterprise security covenants.
+          Enquiry records are stored on servers located in India. Some of our service providers, such as website hosting, email delivery and content delivery networks, may process data in transit outside India. In accordance with Section 16 of the DPDP Act 2023, such transfers occur only to jurisdictions not restricted by the Central Government and subject to appropriate security safeguards.
         </p>
       </section>
 

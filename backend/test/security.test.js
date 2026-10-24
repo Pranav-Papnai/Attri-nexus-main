@@ -14,7 +14,7 @@ let totp;
 const SUPER_EMAIL = 'super@attri.test';
 const SUPER_PASSWORD = 'super-secret-password-1';
 const COMMERCIAL_EMAIL = 'commercial@attri.test';
-const COMMERCIAL_PASSWORD = 'commercial-password-1';
+const COMMERCIAL_PASSWORD = 'Commercial-Password-1';
 
 const api = async (path, options = {}) => {
   const res = await fetch(`${base}${path}`, {
