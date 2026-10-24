@@ -80,7 +80,8 @@ import {
   KeyRound,
   Copy,
   CheckCheck,
-  Lock
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 
 export const normalizeCategory = (cat?: string): 'Rice' | 'Animal Feed' | 'Beans and Pulses' | 'Wheat' => {
@@ -89,6 +90,22 @@ export const normalizeCategory = (cat?: string): 'Rice' | 'Animal Feed' | 'Beans
   if (c.includes('bean') || c.includes('pulse') || c.includes('chickpea') || c.includes('lentil') || c.includes('matpe') || c.includes('mung') || c.includes('peas')) return 'Beans and Pulses';
   if (c.includes('wheat') || c.includes('flour') || c.includes('grain') || c.includes('atta') || c.includes('durum') || c.includes('lokwan') || c.includes('sharbati')) return 'Wheat';
   return 'Rice';
+};
+
+// Feed is checked first so "rice bran" / "rice DDGS" are not read as rice.
+const TEXT_CATEGORY_KEYWORDS: [ReturnType<typeof normalizeCategory>, string[]][] = [
+  ['Animal Feed', ['animal', 'feed', 'ddgs', 'meal', 'soybean', 'soya', 'rapeseed', 'mustard cake', 'bran', 'cattle', 'poultry']],
+  ['Rice', ['rice', 'basmati', 'sella', 'sona', 'masoori', 'ir 64', 'ir64', 'parboiled', 'ponni', 'kolam', 'swarna', '1121', '1509']],
+  ['Beans and Pulses', ['bean', 'pulse', 'dal', 'chickpea', 'chana', 'lentil', 'masoor', 'matpe', 'urad', 'mung', 'moong', 'peas', 'toor', 'arhar', 'rajma']],
+  ['Wheat', ['wheat', 'flour', 'atta', 'durum', 'lokwan', 'sharbati', 'malviya']]
+];
+
+// Unlike normalizeCategory, never guesses: free text that names no commodity
+// (e.g. a general contact-form message) stays unclassified instead of becoming Rice.
+const detectCategoryFromText = (text: string): ReturnType<typeof normalizeCategory> | null => {
+  const t = text.toLowerCase();
+  const hit = TEXT_CATEGORY_KEYWORDS.find(([, words]) => words.some((w) => t.includes(w)));
+  return hit ? hit[0] : null;
 };
 
 export const CORE_COMMERCIAL_CATEGORIES = [
@@ -310,12 +327,11 @@ export const AdminDashboardPage: React.FC = () => {
     ) || null;
   };
 
-  // Helper to resolve an inquiry's 4-category classification
-  const getInquiryCategory = (inq: InquiryRecord): 'Rice' | 'Animal Feed' | 'Beans and Pulses' | 'Wheat' => {
+  // 'General' = the enquiry names no product and its text mentions no commodity
+  const getInquiryCategory = (inq: InquiryRecord): ReturnType<typeof normalizeCategory> | 'General' => {
     const matched = findProductForInquiry(inq);
     if (matched) return normalizeCategory(matched.category);
-    const text = `${inq.product_id || ''} ${inq.message || ''}`.toLowerCase();
-    return normalizeCategory(text);
+    return detectCategoryFromText(`${inq.product_id || ''} ${inq.message || ''}`) ?? 'General';
   };
 
   // Reset to page 1 whenever the visible lead set changes shape
@@ -406,15 +422,16 @@ export const AdminDashboardPage: React.FC = () => {
       const activeCount = catProducts.filter(p => p.isActive !== false).length;
       const newInqCount = catInquiries.filter(i => i.status === 'new').length;
 
-      // Find top demanded variety or product in this category
+      // Most-enquired catalogue product in this category
       const varietyCounts: Record<string, number> = {};
       catInquiries.forEach(i => {
         const prod = findProductForInquiry(i);
-        const name = prod?.name || i.product_id || 'Standard Variety';
-        varietyCounts[name] = (varietyCounts[name] || 0) + 1;
+        if (prod) varietyCounts[prod.name] = (varietyCounts[prod.name] || 0) + 1;
       });
       const topVarietyEntry = Object.entries(varietyCounts).sort((a, b) => b[1] - a[1])[0];
-      const topVariety = topVarietyEntry ? topVarietyEntry[0] : 'No enquiries yet';
+      const topVariety = topVarietyEntry
+        ? topVarietyEntry[0]
+        : catInquiries.length > 0 ? 'No product named' : 'No enquiries yet';
 
       return {
         id: cat.id,
@@ -561,6 +578,10 @@ export const AdminDashboardPage: React.FC = () => {
         color: c.color,
         emoji: c.emoji
       }));
+      const generalCount = inquiries.filter((i) => getInquiryCategory(i) === 'General').length;
+      if (generalCount > 0) {
+        barCategoryData.push({ label: 'General (no product named)', shortLabel: 'General', value: generalCount, color: '#94A3B8', emoji: '✉️' });
+      }
       donutCategoryData = CATEGORY_META.map((c) => ({
         label: c.label,
         value: products.filter((p) => normalizeCategory(p.category) === c.id).length,
@@ -659,7 +680,8 @@ export const AdminDashboardPage: React.FC = () => {
 
     return {
       isScoped,
-      scopeLabel: CATEGORY_META.find((c) => c.id === scope)?.label || 'All Categories',
+      scopeLabel: scope === 'General' ? 'General enquiries' : CATEGORY_META.find((c) => c.id === scope)?.label || 'All Categories',
+      generalCount: inquiries.filter((i) => getInquiryCategory(i) === 'General').length,
       scopedTotal,
       scopedProductCount: scopedProducts.length,
       trendData,
@@ -1578,6 +1600,16 @@ export const AdminDashboardPage: React.FC = () => {
                       Click a category to see each of its products' enquiries, and to filter every chart and the leads table below
                     </p>
                   </div>
+                  {dashboardCategoryFilter === 'all' && analyticsData.generalCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setDashboardCategoryFilter('General'); setDashboardProductFilter('all'); }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-400/40 hover:bg-slate-500/20 cursor-pointer self-start sm:self-auto transition-colors"
+                    >
+                      <span>{analyticsData.generalCount} general {analyticsData.generalCount === 1 ? 'enquiry' : 'enquiries'} (no product named)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {dashboardCategoryFilter !== 'all' && (
                     <button
                       onClick={() => { setDashboardCategoryFilter('all'); setDashboardProductFilter('all'); }}
@@ -1788,6 +1820,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <option value="Animal Feed">🐮 Animal Feed</option>
                       <option value="Beans and Pulses">🫘 Beans & Pulses</option>
                       <option value="Wheat">🌾 Wheat & Grains</option>
+                      <option value="General">✉️ General (no product)</option>
                     </select>
 
                     <select
